@@ -1,0 +1,52 @@
+package GUI;
+
+message Coord {
+  optional float abs = 1;
+  optional float rel = 2;
+}
+
+message Rect {
+	required Coord left = 1;
+	required Coord top = 2;
+	required Coord right = 3;
+	required Coord bottom = 4;
+}
+
+message Element {
+  required Rect area = 1;
+  optional float rotation = 2; // Implementations are not required to support rotation.
+  optional Coord center = 3;
+}
+
+message Window {
+  optional string class = 1; // For top level GUI definitions, defines the class, and for children, specifies what class to use.
+  optional uint32 id = 2; // Only used for differentiating children. Note that a GUI layout is a bunch of children attached to the root definition.
+  optional string name = 5; // You may name a GUI element, but this won't be used outside of the implementation.
+  required Element element = 3; // Specifies the attributes of the GUI window
+  repeated Window children = 4; // Specifies children of this window.
+}
+
+message Data { // This defines anything that can either be a relative or absolute filepath, or embedded as bytes in the file.
+  optional string file = 1;
+  optional bytes data = 2;
+}
+
+message Renderable {
+  required Element element = 1;
+  optional uint32 id = 6; // Optional ID unique to all skins for a GUI element tree. Used so implementations can manipulate specific renderables.
+  optional Data image = 2; // If image and text and vector are all empty, this is treated as an invisible container.
+  optional string text = 3; // Only one of image, text, and vector may be specified, If multiple ones are specified, a vector, then an image, then text will be used, whichever one is defined first in that order.0
+  optional Data vector = 4; // Vector may not be supported by some implementations. You can take advantage of the above evaluation order by specifying both vector and an image. If vectors are not supported, it will fall back to the image.
+  optional bool linerect = 7; // If specified, true will draw a line from topleft to bottomright, and false will draw a rectangle in the area.
+  repeated Renderable children = 5;
+}
+
+message SkinTarget {
+  optional string class = 1; // Specifying a class will create a default skin for that class, overriding any previous defaults. If this isn't used in a top-level GUI element, it will instead override the default for all children in that element and below. Multiple specifications will override each other in terms of increasing depth.
+  optional uint32 id = 2; // Specifying an ID allows you to target a specific child element of some GUI element.
+}
+
+message Skin {
+  repeated SkinTarget targets = 1; // Each string goes down the heirarchy once. The first string must be a class to specify the top-level element. All other strings can either be IDs to target specific children, or classes to target all children of that class type within the top-level element.
+  repeated Renderable skin = 2; 
+}
