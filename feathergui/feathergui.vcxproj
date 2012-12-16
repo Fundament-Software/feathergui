@@ -60,6 +60,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -92,6 +93,7 @@
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -117,11 +119,15 @@
     <ClInclude Include="..\include\bss_compiler.h" />
     <ClInclude Include="..\include\feathergui.h" />
     <ClInclude Include="..\include\fgButton.h" />
+    <ClInclude Include="..\include\fgContainer.h" />
+    <ClInclude Include="..\include\fgMenu.h" />
+    <ClInclude Include="..\include\fgTopWindow.h" />
     <ClInclude Include="..\include\rtree.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="feathergui.c" />
     <ClCompile Include="fgButton.c" />
+    <ClCompile Include="fgContainer.c" />
     <ClCompile Include="rtree.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

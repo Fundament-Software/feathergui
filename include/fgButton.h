@@ -12,6 +12,7 @@ typedef struct {
   Window window;
 } fgButton;
 
+extern void __fastcall fgButton_Create(Renderable* item);
 extern void __fastcall fgButton_Init(fgButton* self, Renderable* item);
 extern void __fastcall fgButton_Message(fgButton* self, FG_Msg* msg);
 
