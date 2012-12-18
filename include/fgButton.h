@@ -4,16 +4,17 @@
 #ifndef __FG_BUTTON_H__
 #define __FG_BUTTON_H__
 
-#include "feathergui.h"
+#include "fgWindow.h"
 
 // A button is usually implemented as a simple background design, plus a centering GUI component that takes a renderable and
-// displays it in the center of the button. However, this is abstracted out, because most systems have built-in button widgets.
+// displays it in the center of the button.
 typedef struct {
   Window window;
+  Renderable* skin[4]; // index 0 is the item, 1 is the skin, 2 is hover, 3 is active
 } fgButton;
 
-extern void __fastcall fgButton_Create(Renderable* item);
-extern void __fastcall fgButton_Init(fgButton* self, Renderable* item);
-extern void __fastcall fgButton_Message(fgButton* self, FG_Msg* msg);
+extern void FG_FASTCALL fgButton_Create(Renderable* item);
+extern void FG_FASTCALL fgButton_Init(fgButton* self, Renderable* item);
+extern void FG_FASTCALL fgButton_Message(fgButton* self, FG_Msg* msg);
 
 #endif

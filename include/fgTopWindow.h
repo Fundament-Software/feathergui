@@ -8,11 +8,12 @@
 
 // A top-level window is an actual window with a titlebar that can be dragged and resized.
 typedef struct {
+  fgContainer window;
 } fgTopWindow;
 
-extern void __fastcall fgTopWindow_Create();
-extern void __fastcall fgTopWindow_Init(fgTopWindow* self);
-extern void __fastcall fgTopWindow_Destroy(fgTopWindow* self);
+extern void FG_FASTCALL fgTopWindow_Create();
+extern void FG_FASTCALL fgTopWindow_Init(fgTopWindow* self);
+extern void FG_FASTCALL fgTopWindow_Destroy(fgTopWindow* self);
 
 
 #endif

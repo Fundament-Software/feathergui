@@ -3,18 +3,18 @@
 
 #include "rtree.h"
 
-extern void __fastcall InitRTree(RTree* self)
+extern void FG_FASTCALL InitRTree(RTree* self)
 {
   memset(self,0,sizeof(RTree));
 }
-extern void __fastcall DestroyRTree(RTree* self)
+extern void FG_FASTCALL DestroyRTree(RTree* self)
 {
   Destroy_RTNVect(&self->children);
 }
-extern RTreeNode* __fastcall InsertRTree(RTree* self, AbsRect* area, void* p)
+extern RTreeNode* FG_FASTCALL InsertRTree(RTree* self, AbsRect* area, void* p)
 {
 }
-extern void* __fastcall GetRTree(RTree* self, AbsVec pt)
+extern void* FG_FASTCALL GetRTree(RTree* self, AbsVec pt)
 {
 
 }

@@ -3,7 +3,7 @@
 
 #include "fgContainer.h"
 
-void __fastcall RegionDestroy(Child* self)
+void FG_FASTCALL RegionDestroy(Child* self)
 {
   while(self->root) // Recursively set all children's parents to 0
     Child_SetParent(self->root, 0);
@@ -17,23 +17,23 @@ void __fastcall RegionDestroy(Child* self)
   }
 }
 
-void __fastcall fgContainer_Init(fgContainer* self)
+void FG_FASTCALL fgContainer_Init(fgContainer* self)
 {
   Window_Init(&self->window,0);
   self->window.element.destroy=&fgContainer_Destroy; 
 }
-void __fastcall fgContainer_Destroy(fgContainer* self)
+void FG_FASTCALL fgContainer_Destroy(fgContainer* self)
 {
   while(self->regions!=0)
     fgContainer_RemoveRegion(self,self->regions);
   Window_Destroy(&self->window);
 }
-Child* __fastcall fgContainer_AddRegion(fgContainer* self, Element* region)
+Child* FG_FASTCALL fgContainer_AddRegion(fgContainer* self, Element* region)
 {
   Child* r = (Child*)malloc(sizeof(Child));
   memset(r,0,sizeof(Child));
   r->destroy=&RegionDestroy;
-  r->parent=(Child*)self;
+  r->parent=&self->window.element;
 
   r->prev=0;
   r->next=self->regions;
@@ -41,10 +41,11 @@ Child* __fastcall fgContainer_AddRegion(fgContainer* self, Element* region)
   self->regions=r;
 
   memcpy(&r->element,region,sizeof(Element));
+  return r;
 }
-void __fastcall fgContainer_RemoveRegion(fgContainer* self, Child* region)
+void FG_FASTCALL fgContainer_RemoveRegion(fgContainer* self, Child* region)
 {
-  assert(region->parent == self);
+  assert(region->parent == &self->window.element);
   (*region->destroy)(region);
   free(region);
 }

@@ -4,7 +4,7 @@
 #ifndef __FG_CONTAINER_H__
 #define __FG_CONTAINER_H__
 
-#include "feathergui.h"
+#include "fgWindow.h"
 
 // A container is a collection of Child objects that divide a window into areas.
 typedef struct {
@@ -12,10 +12,10 @@ typedef struct {
   Child* regions;
 } fgContainer;
 
-extern void __fastcall fgContainer_Create();
-extern void __fastcall fgContainer_Init(fgContainer* self);
-extern void __fastcall fgContainer_Destroy(fgContainer* self);
-extern Child* __fastcall fgContainer_AddRegion(fgContainer* self, Element* region);
-extern void __fastcall fgContainer_RemoveRegion(fgContainer* self, Child* region);
+extern void FG_FASTCALL fgContainer_Create();
+extern void FG_FASTCALL fgContainer_Init(fgContainer* self);
+extern void FG_FASTCALL fgContainer_Destroy(fgContainer* self);
+extern Child* FG_FASTCALL fgContainer_AddRegion(fgContainer* self, Element* region);
+extern void FG_FASTCALL fgContainer_RemoveRegion(fgContainer* self, Child* region);
 
 #endif

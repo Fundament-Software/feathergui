@@ -24,16 +24,17 @@
 #include "bss_compiler.h"
 
 typedef float FREL; // Change this to double for double precision (why on earth you would need that for a GUI, however, is beyond me)
-typedef float FABS;
+typedef float FABS; // We seperate both of these types because then you don't have to guess if a float is relative or absolute
 typedef unsigned int FG_UINT;
 
 #define FGUI_VERSION_MAJOR 0
 #define FGUI_VERSION_MINOR 1
 #define FGUI_VERSION_REVISION 0
+#define FG_FASTCALL BSS_COMPILER_FASTCALL
 
 // A unified coordinate specifies things in terms of absolute and relative positions.
 typedef struct {
-  FABS abs; // Absolute coordinates are always added to the point specified by relative coordinates.
+  FABS abs; // Absolute coordinates are added to relative coordinates, which specify a point from a linear interpolation of the parent's dimensions
   FREL rel;
 } Coord;
 
@@ -64,11 +65,11 @@ MAKE_RECT(FABS,AbsVec,AbsRect);
 // A coordinate rect specifies its topleft and bottomright corners in terms of coordinate vectors.
 MAKE_RECT(Coord,CVec,CRect);
 
-static BSS_FORCEINLINE FG_UINT __fastcall fbnext(FG_UINT in)
+static BSS_FORCEINLINE FG_UINT FG_FASTCALL fbnext(FG_UINT in)
 {
   return in + 1 + (in>>1) + (in>>3) - (in>>7);
 }
-static BSS_FORCEINLINE FABS __fastcall lerp(FABS a, FABS b, FREL amt)
+static BSS_FORCEINLINE FABS FG_FASTCALL lerp(FABS a, FABS b, FREL amt)
 {
 	return a+((FABS)((b-a)*amt));
 }
@@ -103,21 +104,13 @@ typedef struct {
 
 typedef struct __CHILD {
   Element element;
-  void (__fastcall *destroy)(void* self); // virtual destructor
+  void (FG_FASTCALL *destroy)(void* self); // virtual destructor
   struct __CHILD* parent;
   struct __CHILD* root; // children list root
   struct __CHILD* next;
   struct __CHILD* prev;
 } Child;
 
-struct __WINDOW;
-
-typedef struct __RENDERABLE {
-  Child element;
-  void (__fastcall *draw)(struct __RENDERABLE* self);
-  struct __WINDOW* parent;
-  void* ptop;
-} Renderable;
 
 enum FG_MSGTYPE
 {
@@ -139,13 +132,17 @@ enum FG_MSGTYPE
   FG_MOVE, // Passed when any change is made to an element
   FG_ADDCHILD, // Pass an FG_Msg with this type and set the other pointer to the child that should be added.
   FG_SETPARENT,
-  FG_ADDRENDERABLE,
-  FG_SETCLIP,
+  FG_ADDRENDERABLE, // Send a Renderable in other with an optional ID for its skin index in otheraux.
+  FG_REMOVERENDERABLE,
+  FG_SETCLIP, // Send an otherint equal to 0 to disable cliping, otherwise its clipped by parent
   FG_SETCENTERED, // Removes centering if otherint is 0, centers x-axis on 1, y-axis on 2, both on 3
   FG_ADDITEM,
+  FG_SHOW, // Send an otherint equal to 0 to hide, otherwise its made visible
+  FG_SETTILE, // fgGrid only, 16 tiles on x-axis, 32 tiles on y-axis, 48 both.
   FG_CUSTOMEVENT
 };
 
+// General message structure which contains the message type and then various kinds of information depending on the type.
 typedef struct __FG_MSG {
   unsigned char type;
 
@@ -156,57 +153,25 @@ typedef struct __FG_MSG {
         unsigned char keycode; //only used by KEYDOWN/KEYUP, represents an actual keycode, not a character
         char sigkeys;
         char keydown;
-        int keychar; //Only used by KEYCHAR
+        int keychar; //Only used by KEYCHAR, represents a utf32 character
     };
     struct { float joyvalue; short joyaxis; }; // JOYAXIS
     struct { char joydown; short joybutton; }; // JOYBUTTON
-    void* other; // Used by any generic messages (FG_ADDCHILD, FG_SETPARENT, etc.)
+    struct { void* other; unsigned char otheraux; }; // Used by any generic messages (FG_ADDCHILD, FG_SETPARENT, etc.)
     int otherint; // Used by any generic message that want an int (FG_SETCLIP, FG_SETCENTERED, etc.)
   };
 } FG_Msg;
 
-// Defines the base GUI element, a window. This is not an actual top level window.
-typedef struct __WINDOW {
-  Child element;
-  void (__fastcall *message)(struct __WINDOW* self, FG_Msg* msg);
-  FG_UINT id;
-  FG_UINT order; // order relative to other windows
-  Renderable* rlist;
-  struct __WINDOW* contextmenu;
-  unsigned char centeraxis; // 0 is no centering, 1 is x-axis, 2 is y-axis, 3 is both
-} Window;
 
-extern Window* fgFocusedWindow;
-extern void (__fastcall *keymsghook)(FG_Msg* msg);
+extern void (FG_FASTCALL *keymsghook)(FG_Msg* msg);
 
-extern void __fastcall Child_Init(Child* BSS_RESTRICT self, Child* BSS_RESTRICT parent);
-extern void __fastcall Child_Destroy(Child* self);
-extern void __fastcall Child_SetParent(Child* BSS_RESTRICT self, Child* BSS_RESTRICT parent);
+extern void FG_FASTCALL Child_Init(Child* BSS_RESTRICT self, Child* BSS_RESTRICT parent);
+extern void FG_FASTCALL Child_Destroy(Child* self);
+extern void FG_FASTCALL Child_SetParent(Child* BSS_RESTRICT self, Child* BSS_RESTRICT parent);
 
-extern void __fastcall Renderable_Init(Renderable* self);
-extern void __fastcall Renderable_Draw(Renderable* self);
-extern void __fastcall Renderable_Destroy(Renderable* self);
-
-extern void __fastcall Window_Init(Window* BSS_RESTRICT self, Child* BSS_RESTRICT parent);
-extern void __fastcall Window_Destroy(Window* self);
-extern void __fastcall Window_Message(Window* self, FG_Msg* msg);
-extern void __fastcall Window_SetElement(Window* self, Element* element);
-extern void __fastcall Window_SetArea(Window* self, CRect* area);
-extern void __fastcall Window_BasicMessage(Window* self, unsigned char type); // Shortcut for sending type messages with no data
-extern void __fastcall Window_VoidMessage(Window* self, unsigned char type, void* data); // Shortcut for sending void* messages
-extern void __fastcall Window_IntMessage(Window* self, unsigned char type, int data); // Shortcut for sending int messages
-
-extern AbsVec __fastcall ResolveVec(Child* p, CVec* v);
-extern AbsRect __fastcall ResolveRect(Child* p, CRect* v);
-extern char __fastcall CompareCRects(CRect* l, CRect* r); // Returns 0 if both are the same or 1 otherwise
-extern void __fastcall CRect_DoCenter(CRect* self, unsigned char axis);
-
-extern Renderable* __fastcall LoadImage(const char* path);
-//extern Renderable* __fastcall LoadBitmap(const void* data);
-extern Renderable* __fastcall LoadVector(const char* text);
-extern Renderable* __fastcall LoadText(const char* text, int flags);
-extern void __fastcall FreeRenderable(Renderable* p);
-
-extern char __fastcall EditText(Renderable* text, int flags);
+extern AbsVec FG_FASTCALL ResolveVec(Child* p, CVec* v);
+extern AbsRect FG_FASTCALL ResolveRect(Child* p, CRect* v);
+extern char FG_FASTCALL CompareCRects(CRect* l, CRect* r); // Returns 0 if both are the same or 1 otherwise
+extern void FG_FASTCALL CRect_DoCenter(CRect* self, unsigned char axis);
 
 #endif

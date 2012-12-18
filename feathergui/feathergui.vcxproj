@@ -120,14 +120,19 @@
     <ClInclude Include="..\include\feathergui.h" />
     <ClInclude Include="..\include\fgButton.h" />
     <ClInclude Include="..\include\fgContainer.h" />
+    <ClInclude Include="..\include\fgGrid.h" />
     <ClInclude Include="..\include\fgMenu.h" />
+    <ClInclude Include="..\include\fgRenderable.h" />
     <ClInclude Include="..\include\fgTopWindow.h" />
-    <ClInclude Include="..\include\rtree.h" />
+    <ClInclude Include="..\include\fgWindow.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="feathergui.c" />
     <ClCompile Include="fgButton.c" />
     <ClCompile Include="fgContainer.c" />
+    <ClCompile Include="fgMenu.c" />
+    <ClCompile Include="fgRenderable.c" />
+    <ClCompile Include="fgWindow.c" />
     <ClCompile Include="rtree.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

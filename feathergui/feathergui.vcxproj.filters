@@ -26,9 +26,6 @@
     <ClInclude Include="..\include\bss_compiler.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\rtree.h">
-      <Filter>include</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\fgButton.h">
       <Filter>include</Filter>
     </ClInclude>
@@ -39,6 +36,15 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="..\include\fgMenu.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\fgWindow.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\fgRenderable.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\fgGrid.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
@@ -53,6 +59,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="fgContainer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fgMenu.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fgRenderable.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fgWindow.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
