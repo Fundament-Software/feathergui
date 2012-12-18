@@ -173,5 +173,7 @@ extern AbsVec FG_FASTCALL ResolveVec(Child* p, CVec* v);
 extern AbsRect FG_FASTCALL ResolveRect(Child* p, CRect* v);
 extern char FG_FASTCALL CompareCRects(CRect* l, CRect* r); // Returns 0 if both are the same or 1 otherwise
 extern void FG_FASTCALL CRect_DoCenter(CRect* self, unsigned char axis);
+extern void FG_FASTCALL LList_Remove(Child* self, Child** root);
+extern void FG_FASTCALL LList_Add(Child* self, Child** root);
 
 #endif

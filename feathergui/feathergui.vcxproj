@@ -123,6 +123,7 @@
     <ClInclude Include="..\include\fgGrid.h" />
     <ClInclude Include="..\include\fgMenu.h" />
     <ClInclude Include="..\include\fgRenderable.h" />
+    <ClInclude Include="..\include\fgRoot.h" />
     <ClInclude Include="..\include\fgTopWindow.h" />
     <ClInclude Include="..\include\fgWindow.h" />
   </ItemGroup>

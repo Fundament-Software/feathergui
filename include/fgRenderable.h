@@ -34,6 +34,8 @@ typedef struct __RENDERABLE {
 extern void FG_FASTCALL Renderable_Init(Renderable* self);
 extern void FG_FASTCALL Renderable_Destroy(Renderable* self);
 extern void FG_FASTCALL Renderable_Message(Renderable* self, unsigned char type, void* arg);
+extern void FG_FASTCALL Renderable_SetWindow(Renderable* self, struct __WINDOW* window);
+extern void FG_FASTCALL Renderable_RemoveParent(Renderable* self);
 
 extern Renderable* FG_FASTCALL LoadImage(const char* path);
 extern Renderable* FG_FASTCALL LoadImageData(const void* data, size_t length);

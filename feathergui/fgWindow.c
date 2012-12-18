@@ -29,20 +29,6 @@ void FG_FASTCALL Window_Destroy(Window* self)
   Child_Destroy(&self->element);
 }
 
-void FG_FASTCALL Window_AddRenderable(Window* BSS_RESTRICT self, Renderable* BSS_RESTRICT rend, Child* BSS_RESTRICT parent)
-{
-  Child_SetParent(&rend->element,0); //Removes this renderable from its parent
-  rend->element.parent=parent; // Adds this renderable to this window as a child of parent
-  rend->parent=self;
-  rend->element.prev=0;
-  rend->element.next=&self->rlist->element;
-  if(self->rlist!=0) self->rlist->element.prev=&rend->element;
-  self->rlist=rend;
-
-  while(rend->element.root!=0) // Goes through this renderables children and adds them all to this window
-    Window_AddRenderable(self,(Renderable*)rend->element.root,&rend->element);
-}
-
 void FG_FASTCALL Window_Message(Window* self, FG_Msg* msg)
 {
   //FG_Msg aux;
@@ -79,10 +65,15 @@ void FG_FASTCALL Window_Message(Window* self, FG_Msg* msg)
     Child_SetParent(&self->element,(Child*)msg->other);
     break;
   case FG_ADDRENDERABLE:
-    Window_AddRenderable(self,(Renderable*)msg->other,&self->element);
+    Renderable_RemoveParent((Renderable*)msg->other);
+    LList_Add((Child*)msg->other,&self->rlist);
+    Renderable_SetWindow((Renderable*)msg->other,self);
     break;
   case FG_REMOVERENDERABLE:
-
+    assert(((Renderable*)msg->other)->parent==self);
+    Renderable_RemoveParent((Renderable*)msg->other);
+    ((Renderable*)msg->other)->element.parent=0;
+    Renderable_SetWindow((Renderable*)msg->other,0);
     break;
   case FG_SETCLIP:
     self->flags|=((msg->otherint==0)<<2);

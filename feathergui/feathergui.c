@@ -43,6 +43,21 @@ AbsRect FG_FASTCALL ResolveRect(Child* p, CRect* v)
   return r; 
 }
 
+void FG_FASTCALL LList_Remove(Child* self, Child** root)
+{
+	if(self->prev != 0) self->prev->next = self->next;
+  else *root = self->next;
+	if(self->next != 0) self->next->prev = self->prev;
+}
+
+void FG_FASTCALL LList_Add(Child* self, Child** root)
+{
+  self->prev=0;
+  self->next=*root;
+  if((*root)!=0) (*root)->prev=self;
+  *root=self;
+}
+
 void FG_FASTCALL Child_Init(Child* BSS_RESTRICT self, Child* BSS_RESTRICT parent) 
 { 
   memset(self,0,sizeof(Child));
@@ -53,29 +68,21 @@ void FG_FASTCALL Child_Destroy(Child* self)
 {
   while(self->root) // Recursively set all children's parents to 0
     Child_SetParent(self->root, 0);
-
-  Child_SetParent(self,0); // Remove ourselves from our parent
+  
+  if(self->parent!=0)
+    LList_Remove(self,&self->parent->root); // Remove ourselves from our parent
 }
 
 void FG_FASTCALL Child_SetParent(Child* BSS_RESTRICT self, Child* BSS_RESTRICT parent)
 {
   assert(self!=0);
   if(self->parent!=0)
-  { // Remove ourselves from our parent
-		if(self->prev != 0) self->prev->next = self->next;
-    else self->parent->root = self->next;
-		if(self->next != 0) self->next->prev = self->prev;
-  }
+    LList_Remove(self,&self->parent->root); // Remove ourselves from our parent
 
   self->parent=parent;
 
   if(parent)
-  { // Add ourselves to our new parent
-    self->prev=0;
-    self->next=parent->root;
-    if(parent->root!=0) parent->root->prev=self;
-    parent->root=self;
-  }
+    LList_Add(self,&parent->root); // Add ourselves to our new parent
 }
 
 void FG_FASTCALL CRect_DoCenter(CRect* cr, unsigned char axis)

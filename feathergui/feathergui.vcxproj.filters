@@ -47,6 +47,9 @@
     <ClInclude Include="..\include\fgGrid.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\fgRoot.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="feathergui.c">
