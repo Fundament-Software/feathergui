@@ -6,16 +6,23 @@
 
 #include "fgWindow.h"
 
-// A container is a collection of Child objects that divide a window into areas.
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
+// A container is a collection of fgChild objects that divide a window into areas.
 typedef struct {
-  Window window;
-  Child* regions;
+  fgWindow window;
+  fgChild* regions;
 } fgContainer;
 
-extern void FG_FASTCALL fgContainer_Create();
-extern void FG_FASTCALL fgContainer_Init(fgContainer* self);
-extern void FG_FASTCALL fgContainer_Destroy(fgContainer* self);
-extern Child* FG_FASTCALL fgContainer_AddRegion(fgContainer* self, Element* region);
-extern void FG_FASTCALL fgContainer_RemoveRegion(fgContainer* self, Child* region);
+FG_EXTERN void FG_FASTCALL fgContainer_Init(fgContainer* self);
+FG_EXTERN void FG_FASTCALL fgContainer_Destroy(fgContainer* self);
+FG_EXTERN fgChild* FG_FASTCALL fgContainer_AddRegion(fgContainer* self, fgElement* region);
+FG_EXTERN void FG_FASTCALL fgContainer_RemoveRegion(fgContainer* self, fgChild* region);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

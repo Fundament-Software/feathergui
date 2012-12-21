@@ -4,30 +4,37 @@
 #ifndef __FG_WINDOW_H__
 #define __FG_WINDOW_H__
 
-#include "fgRenderable.h"
+#include "fgStatic.h"
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
 
 // Defines the base GUI element, a window. This is not an actual top level window.
 typedef struct __WINDOW {
-  Child element;
-  void (FG_FASTCALL *message)(struct __WINDOW* self, FG_Msg* msg);
+  fgChild element;
+  char (FG_FASTCALL *message)(struct __WINDOW* self, FG_Msg* msg);
   FG_UINT id;
-  FG_UINT order; // order relative to other windows
   unsigned char flags; // 1 is x-axis centering, 2 is y-axis, 3 is both, 4 is clipping disabled, 8 is not visible
-  Renderable* rlist;
+  fgStatic* rlist;
   struct __WINDOW* contextmenu;
-} Window;
+} fgWindow;
 
-extern Window* fgFocusedWindow;
-extern void (FG_FASTCALL *behaviorhook)(struct __WINDOW* self, FG_Msg* msg);
+FG_EXTERN fgWindow* fgFocusedWindow;
+FG_EXTERN fgWindow* fgLastHover; // Last window the mouse moved over, used to generate MOUSEON and MOUSEOFF events
 
-extern void FG_FASTCALL Window_Init(Window* BSS_RESTRICT self, Child* BSS_RESTRICT parent);
-extern void FG_FASTCALL Window_Destroy(Window* self);
-extern void FG_FASTCALL Window_Message(Window* self, FG_Msg* msg);
-extern void FG_FASTCALL Window_SetElement(Window* self, Element* element);
-extern void FG_FASTCALL Window_SetArea(Window* self, CRect* area);
-extern void FG_FASTCALL Window_BasicMessage(Window* self, unsigned char type); // Shortcut for sending type messages with no data
-extern void FG_FASTCALL Window_VoidMessage(Window* self, unsigned char type, void* data); // Shortcut for sending void* messages
-extern void FG_FASTCALL Window_IntMessage(Window* self, unsigned char type, int data); // Shortcut for sending int messages
+FG_EXTERN void FG_FASTCALL fgWindow_Init(fgWindow* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent);
+FG_EXTERN void FG_FASTCALL fgWindow_Destroy(fgWindow* self);
+FG_EXTERN char FG_FASTCALL fgWindow_Message(fgWindow* self, FG_Msg* msg);
+FG_EXTERN void FG_FASTCALL fgWindow_SetElement(fgWindow* self, fgElement* element);
+FG_EXTERN void FG_FASTCALL fgWindow_SetArea(fgWindow* self, CRect* area);
+FG_EXTERN void FG_FASTCALL fgWindow_BasicMessage(fgWindow* self, unsigned char type); // Shortcut for sending type messages with no data
+FG_EXTERN void FG_FASTCALL fgWindow_VoidMessage(fgWindow* self, unsigned char type, void* data); // Shortcut for sending void* messages
+FG_EXTERN void FG_FASTCALL fgWindow_IntMessage(fgWindow* self, unsigned char type, int data); // Shortcut for sending int messages
+FG_EXTERN void FG_FASTCALL fgWindow_SetParent(fgWindow* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent);
 
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

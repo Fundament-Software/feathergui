@@ -3,33 +3,28 @@
 
 #include "fgWindow.h"
 
-void FG_FASTCALL Behavior_Default(Window* self, FG_Msg* msg)
-{
-  (*self->message)(self,msg);
-}
+fgWindow* fgFocusedWindow = 0;
+fgWindow* fgLastHover = 0;
 
-Window* fgFocusedWindow=0;
-void (FG_FASTCALL *behaviorhook)(struct __WINDOW* self, FG_Msg* msg)=&Behavior_Default;
-
-void FG_FASTCALL Window_Init(Window* BSS_RESTRICT self, Child* BSS_RESTRICT parent)
+void FG_FASTCALL fgWindow_Init(fgWindow* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent)
 { 
   assert(self!=0);
-  memset(self,0,sizeof(Window)); 
-  Child_Init(&self->element,parent);
-  self->element.destroy=&Window_Destroy; 
-  self->message=&Window_Message; 
+  memset(self,0,sizeof(fgWindow)); 
+  fgChild_Init(&self->element,parent);
+  self->element.destroy=&fgWindow_Destroy; 
+  self->message=&fgWindow_Message; 
 }
-void FG_FASTCALL Window_Destroy(Window* self)
+void FG_FASTCALL fgWindow_Destroy(fgWindow* self)
 {
-  Renderable* cur;
+  fgStatic* cur;
   assert(self!=0);
   while((cur=self->rlist)!=0) 
-    (*cur->element.destroy)(cur); // Removes renderable from rlist
+    (*cur->element.destroy)(cur); // Removes static from rlist
 
-  Child_Destroy(&self->element);
+  fgChild_Destroy(&self->element);
 }
 
-void FG_FASTCALL Window_Message(Window* self, FG_Msg* msg)
+char FG_FASTCALL fgWindow_Message(fgWindow* self, FG_Msg* msg)
 {
   //FG_Msg aux;
   CRect* cr;
@@ -39,15 +34,24 @@ void FG_FASTCALL Window_Message(Window* self, FG_Msg* msg)
 
   switch(msg->type)
   {
+  case FG_MOUSEMOVE:
+    if(fgLastHover!=self)
+    {
+      if(fgLastHover!=0)
+        fgWindow_BasicMessage(fgLastHover,FG_MOUSEOFF);
+      fgLastHover=self;
+      fgWindow_BasicMessage(self,FG_MOUSEON);
+    }
+    break;
   case FG_MOUSEDOWN:
     if(fgFocusedWindow != self)
-      Window_BasicMessage(self,FG_GOTFOCUS);
+      fgWindow_BasicMessage(self,FG_GOTFOCUS);
     if(msg->button == 2 && self->contextmenu!=0)
-      Window_BasicMessage(self->contextmenu,FG_GOTFOCUS);
+      fgWindow_BasicMessage(self->contextmenu,FG_GOTFOCUS);
     break;
   case FG_GOTFOCUS:
     if(fgFocusedWindow) // We do this here so you can disable getting focus by blocking this message without messing things up
-      Window_BasicMessage(fgFocusedWindow,FG_LOSTFOCUS);
+      fgWindow_BasicMessage(fgFocusedWindow,FG_LOSTFOCUS);
     fgFocusedWindow=self;
     break;
   case FG_LOSTFOCUS:
@@ -59,21 +63,21 @@ void FG_FASTCALL Window_Message(Window* self, FG_Msg* msg)
       CRect_DoCenter(&self->element.element.area,self->flags);
     break;
   case FG_ADDCHILD:
-    Child_SetParent((Child*)msg->other,&self->element);
+    fgChild_SetParent((fgChild*)msg->other,&self->element);
     break;
   case FG_SETPARENT:
-    Child_SetParent(&self->element,(Child*)msg->other);
+    fgChild_SetParent(&self->element,(fgChild*)msg->other);
     break;
   case FG_ADDRENDERABLE:
-    Renderable_RemoveParent((Renderable*)msg->other);
-    LList_Add((Child*)msg->other,&self->rlist);
-    Renderable_SetWindow((Renderable*)msg->other,self);
+    fgStatic_RemoveParent((fgStatic*)msg->other);
+    LList_Add((fgChild*)msg->other,(fgChild**)&self->rlist);
+    fgStatic_SetWindow((fgStatic*)msg->other,self);
     break;
   case FG_REMOVERENDERABLE:
-    assert(((Renderable*)msg->other)->parent==self);
-    Renderable_RemoveParent((Renderable*)msg->other);
-    ((Renderable*)msg->other)->element.parent=0;
-    Renderable_SetWindow((Renderable*)msg->other,0);
+    assert(((fgStatic*)msg->other)->parent==self);
+    fgStatic_RemoveParent((fgStatic*)msg->other);
+    ((fgStatic*)msg->other)->element.parent=0;
+    fgStatic_SetWindow((fgStatic*)msg->other,0);
     break;
   case FG_SETCLIP:
     self->flags|=((msg->otherint==0)<<2);
@@ -88,21 +92,26 @@ void FG_FASTCALL Window_Message(Window* self, FG_Msg* msg)
     cr->top.rel=(FREL)(((self->flags&2)!=0)?0.5:0.0); //y-axis center
     CRect_DoCenter(cr,self->flags);
     break;
+  case FG_SETORDER:
+    self->element.order=msg->otherint;
+    fgChild_SetParent(&self->element,self->element.parent);
+    break;
   }
+  return 0;
 }
 
-void FG_FASTCALL Window_SetElement(Window* self, Element* element)
+void FG_FASTCALL fgWindow_SetElement(fgWindow* self, fgElement* element)
 {
   char moved;
-  Element* e = &self->element.element;
-  moved = memcmp(e,element,sizeof(Element))!=0;
+  fgElement* e = &self->element.element;
+  moved = memcmp(e,element,sizeof(fgElement))!=0;
   if(moved)
   {
-    memcpy(e,element,sizeof(Element));
-    Window_BasicMessage(self,FG_MOVE);
+    memcpy(e,element,sizeof(fgElement));
+    fgWindow_BasicMessage(self,FG_MOVE);
   }
 }
-void FG_FASTCALL Window_SetArea(Window* self, CRect* area)
+void FG_FASTCALL fgWindow_SetArea(fgWindow* self, CRect* area)
 {
   char moved;
   CRect* l = &self->element.element.area;
@@ -110,11 +119,11 @@ void FG_FASTCALL Window_SetArea(Window* self, CRect* area)
   if(moved)
   {
     memcpy(l,area,sizeof(CRect));
-    Window_BasicMessage(self,FG_MOVE);
+    fgWindow_BasicMessage(self,FG_MOVE);
   }
 }
 
-void FG_FASTCALL Window_BasicMessage(Window* self, unsigned char type)
+void FG_FASTCALL fgWindow_BasicMessage(fgWindow* self, unsigned char type)
 {
   FG_Msg aux = {0};
   aux.type=type;
@@ -122,7 +131,7 @@ void FG_FASTCALL Window_BasicMessage(Window* self, unsigned char type)
   (*self->message)(self,&aux);
 }
 
-void FG_FASTCALL Window_VoidMessage(Window* self, unsigned char type, void* data)
+void FG_FASTCALL fgWindow_VoidMessage(fgWindow* self, unsigned char type, void* data)
 {
   FG_Msg aux = {0};
   aux.type=type;
@@ -131,7 +140,7 @@ void FG_FASTCALL Window_VoidMessage(Window* self, unsigned char type, void* data
   (*self->message)(self,&aux);
 }
 
-void FG_FASTCALL Window_IntMessage(Window* self, unsigned char type, int data)
+void FG_FASTCALL fgWindow_IntMessage(fgWindow* self, unsigned char type, int data)
 {
   FG_Msg aux = {0};
   aux.type=type;

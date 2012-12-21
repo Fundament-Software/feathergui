@@ -3,6 +3,19 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "feathergui", "feathergui\feathergui.vcxproj", "{65FDFEE1-D190-4A98-B590-55D9FA97E86B}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fgNull", "fgNull\fgNull.vcxproj", "{C967A806-EC07-4800-8C55-7B6CD0066BC8}"
+	ProjectSection(ProjectDependencies) = postProject
+		{65FDFEE1-D190-4A98-B590-55D9FA97E86B} = {65FDFEE1-D190-4A98-B590-55D9FA97E86B}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fgWinAPI", "fgWinAPI\fgWinAPI.vcxproj", "{A8D060DE-D5D6-40B1-9F96-401562E8DACD}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fgTest", "fgTest\fgTest.vcxproj", "{F03E13FD-65E4-4026-BFDA-5A0E4B17B8B9}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C967A806-EC07-4800-8C55-7B6CD0066BC8} = {C967A806-EC07-4800-8C55-7B6CD0066BC8}
+		{65FDFEE1-D190-4A98-B590-55D9FA97E86B} = {65FDFEE1-D190-4A98-B590-55D9FA97E86B}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -13,6 +26,18 @@ Global
 		{65FDFEE1-D190-4A98-B590-55D9FA97E86B}.Debug|Win32.Build.0 = Debug|Win32
 		{65FDFEE1-D190-4A98-B590-55D9FA97E86B}.Release|Win32.ActiveCfg = Release|Win32
 		{65FDFEE1-D190-4A98-B590-55D9FA97E86B}.Release|Win32.Build.0 = Release|Win32
+		{C967A806-EC07-4800-8C55-7B6CD0066BC8}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C967A806-EC07-4800-8C55-7B6CD0066BC8}.Debug|Win32.Build.0 = Debug|Win32
+		{C967A806-EC07-4800-8C55-7B6CD0066BC8}.Release|Win32.ActiveCfg = Release|Win32
+		{C967A806-EC07-4800-8C55-7B6CD0066BC8}.Release|Win32.Build.0 = Release|Win32
+		{A8D060DE-D5D6-40B1-9F96-401562E8DACD}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A8D060DE-D5D6-40B1-9F96-401562E8DACD}.Debug|Win32.Build.0 = Debug|Win32
+		{A8D060DE-D5D6-40B1-9F96-401562E8DACD}.Release|Win32.ActiveCfg = Release|Win32
+		{A8D060DE-D5D6-40B1-9F96-401562E8DACD}.Release|Win32.Build.0 = Release|Win32
+		{F03E13FD-65E4-4026-BFDA-5A0E4B17B8B9}.Debug|Win32.ActiveCfg = Debug|Win32
+		{F03E13FD-65E4-4026-BFDA-5A0E4B17B8B9}.Debug|Win32.Build.0 = Debug|Win32
+		{F03E13FD-65E4-4026-BFDA-5A0E4B17B8B9}.Release|Win32.ActiveCfg = Release|Win32
+		{F03E13FD-65E4-4026-BFDA-5A0E4B17B8B9}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

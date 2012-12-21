@@ -23,6 +23,10 @@
 #include <malloc.h> 
 #include "bss_compiler.h"
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 typedef float FREL; // Change this to double for double precision (why on earth you would need that for a GUI, however, is beyond me)
 typedef float FABS; // We seperate both of these types because then you don't have to guess if a float is relative or absolute
 typedef unsigned int FG_UINT;
@@ -31,6 +35,7 @@ typedef unsigned int FG_UINT;
 #define FGUI_VERSION_MINOR 1
 #define FGUI_VERSION_REVISION 0
 #define FG_FASTCALL BSS_COMPILER_FASTCALL
+#define FG_EXTERN extern BSS_COMPILER_DLLEXPORT
 
 // A unified coordinate specifies things in terms of absolute and relative positions.
 typedef struct {
@@ -100,16 +105,17 @@ typedef struct {
   CRect area;
   FABS rotation;
   CVec center;
-} Element;
+} fgElement;
 
-typedef struct __CHILD {
-  Element element;
+typedef struct _FG_CHILD {
+  fgElement element;
   void (FG_FASTCALL *destroy)(void* self); // virtual destructor
-  struct __CHILD* parent;
-  struct __CHILD* root; // children list root
-  struct __CHILD* next;
-  struct __CHILD* prev;
-} Child;
+  struct _FG_CHILD* parent;
+  struct _FG_CHILD* root; // children list root
+  struct _FG_CHILD* next;
+  struct _FG_CHILD* prev;
+  FG_UINT order; // order relative to other windows or statics
+} fgChild;
 
 
 enum FG_MSGTYPE
@@ -130,15 +136,18 @@ enum FG_MSGTYPE
   FG_GOTFOCUS,
   FG_LOSTFOCUS,
   FG_MOVE, // Passed when any change is made to an element
-  FG_ADDCHILD, // Pass an FG_Msg with this type and set the other pointer to the child that should be added.
   FG_SETPARENT,
-  FG_ADDRENDERABLE, // Send a Renderable in other with an optional ID for its skin index in otheraux.
-  FG_REMOVERENDERABLE,
   FG_SETCLIP, // Send an otherint equal to 0 to disable cliping, otherwise its clipped by parent
   FG_SETCENTERED, // Removes centering if otherint is 0, centers x-axis on 1, y-axis on 2, both on 3
-  FG_ADDITEM,
-  FG_SHOW, // Send an otherint equal to 0 to hide, otherwise its made visible
   FG_SETTILE, // fgGrid only, 16 tiles on x-axis, 32 tiles on y-axis, 48 both.
+  FG_SETORDER, // Sets the order of a window
+  FG_ADDITEM, // Used for fgMenu, takes a pointer to a string
+  FG_ADDCHILD, // Pass an FG_Msg with this type and set the other pointer to the child that should be added.
+  FG_ADDRENDERABLE, // Send a fgStatic in other with an optional ID for its skin index in otheraux.
+  FG_REMOVERENDERABLE,
+  FG_REMOVECHILD,
+  FG_SHOW, // Send an otherint equal to 0 to hide, otherwise its made visible
+  FG_CLICKED, // Used for several controls to signify the user making a valid click (fgButton, fgCombobox, etc.)
   FG_CUSTOMEVENT
 };
 
@@ -162,18 +171,23 @@ typedef struct __FG_MSG {
   };
 } FG_Msg;
 
+FG_EXTERN void FG_FASTCALL fgChild_Init(fgChild* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent);
+FG_EXTERN void FG_FASTCALL fgChild_Destroy(fgChild* self);
+FG_EXTERN void FG_FASTCALL fgChild_SetParent(fgChild* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent);
 
-extern void (FG_FASTCALL *keymsghook)(FG_Msg* msg);
+FG_EXTERN AbsVec FG_FASTCALL ResolveVec(fgChild* p, CVec* v);
+FG_EXTERN AbsRect FG_FASTCALL ResolveRect(fgChild* p, CRect* v);
+FG_EXTERN void FG_FASTCALL ResolveRectCache(AbsRect* r, CRect* v, AbsRect* last);
+FG_EXTERN char FG_FASTCALL CompareCRects(CRect* l, CRect* r); // Returns 0 if both are the same or 1 otherwise
+FG_EXTERN char FG_FASTCALL MsgHitAbsRect(FG_Msg* msg, AbsRect* r);
+FG_EXTERN char FG_FASTCALL MsgHitCRect(FG_Msg* msg, fgChild* child);
+FG_EXTERN void FG_FASTCALL CRect_DoCenter(CRect* self, unsigned char axis);
+FG_EXTERN void FG_FASTCALL LList_Remove(fgChild* self, fgChild** root);
+FG_EXTERN void FG_FASTCALL LList_Add(fgChild* self, fgChild** root);
+FG_EXTERN void FG_FASTCALL LList_Insert(fgChild* self, fgChild* target, fgChild** root);
 
-extern void FG_FASTCALL Child_Init(Child* BSS_RESTRICT self, Child* BSS_RESTRICT parent);
-extern void FG_FASTCALL Child_Destroy(Child* self);
-extern void FG_FASTCALL Child_SetParent(Child* BSS_RESTRICT self, Child* BSS_RESTRICT parent);
-
-extern AbsVec FG_FASTCALL ResolveVec(Child* p, CVec* v);
-extern AbsRect FG_FASTCALL ResolveRect(Child* p, CRect* v);
-extern char FG_FASTCALL CompareCRects(CRect* l, CRect* r); // Returns 0 if both are the same or 1 otherwise
-extern void FG_FASTCALL CRect_DoCenter(CRect* self, unsigned char axis);
-extern void FG_FASTCALL LList_Remove(Child* self, Child** root);
-extern void FG_FASTCALL LList_Add(Child* self, Child** root);
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

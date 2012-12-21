@@ -6,15 +6,23 @@
 
 #include "fgWindow.h"
 
-// A button is usually implemented as a simple background design, plus a centering GUI component that takes a renderable and
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
+// A button is usually implemented as a simple background design, plus a centering GUI component that takes a static and
 // displays it in the center of the button.
 typedef struct {
-  Window window;
-  Renderable* skin[4]; // index 0 is the item, 1 is the skin, 2 is hover, 3 is active
+  fgWindow window;
+  fgStatic* skin[4]; // index 0 is the item, 1 is the skin, 2 is hover, 3 is active
 } fgButton;
 
-extern void FG_FASTCALL fgButton_Create(Renderable* item);
-extern void FG_FASTCALL fgButton_Init(fgButton* self, Renderable* item);
-extern void FG_FASTCALL fgButton_Message(fgButton* self, FG_Msg* msg);
+FG_EXTERN void FG_FASTCALL fgButton_Create(fgStatic* item);
+FG_EXTERN void FG_FASTCALL fgButton_Init(fgButton* self, fgStatic* item);
+FG_EXTERN char FG_FASTCALL fgButton_Message(fgButton* self, FG_Msg* msg);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

@@ -6,15 +6,22 @@
 
 #include "fgWindow.h"
 
-// A grid arranges renderables according to a tiling and margin system.
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
+// A grid arranges statics according to a tiling and margin system.
 typedef struct {
-  Window window; // Note that the window flags consider 16 to be tile on x-axis, 32 to tile on y-axis, 48 both.
+  fgWindow window; // Note that the window flags consider 16 to be tile on x-axis, 32 to tile on y-axis, 48 both.
   AbsRect margins;
   AbsRect dimensions;
 } fgGrid;
 
-extern void FG_FASTCALL fgGrid_Create();
-extern void FG_FASTCALL fgGrid_Init(fgGrid* self);
-extern void FG_FASTCALL fgGrid_Message(fgGrid* self, FG_Msg* msg);
+FG_EXTERN void FG_FASTCALL fgGrid_Init(fgGrid* self);
+FG_EXTERN char FG_FASTCALL fgGrid_Message(fgGrid* self, FG_Msg* msg);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

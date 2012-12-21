@@ -41,21 +41,18 @@
     <ClInclude Include="..\include\fgWindow.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\fgRenderable.h">
-      <Filter>include</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\fgGrid.h">
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="..\include\fgRoot.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\fgStatic.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="feathergui.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="rtree.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="fgButton.c">
@@ -67,10 +64,16 @@
     <ClCompile Include="fgMenu.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="fgRenderable.c">
+    <ClCompile Include="fgWindow.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="fgWindow.c">
+    <ClCompile Include="fgRoot.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fgGrid.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fgStatic.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

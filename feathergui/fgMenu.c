@@ -7,19 +7,18 @@ void FG_FASTCALL fgMenu_Init(fgMenu* self)
 {
   fgGrid_Init(&self->grid);
 }
-void FG_FASTCALL fgMenu_Message(fgMenu* self, FG_Msg* msg)
+char FG_FASTCALL fgMenu_Message(fgMenu* self, FG_Msg* msg)
 {
   switch(msg->type)
   {
   case FG_ADDITEM:
-    break;
+    return 0;
   case FG_GOTFOCUS:
-    Window_IntMessage(&self->grid.window,FG_SHOW,1);
+    fgWindow_IntMessage(&self->grid.window,FG_SHOW,1);
     break;
   case FG_LOSTFOCUS:
-    Window_IntMessage(&self->grid.window,FG_SHOW,0);
+    fgWindow_IntMessage(&self->grid.window,FG_SHOW,0);
     break;
-  default:
-    Window_Message(&self->grid.window,msg);
   }
+  return fgGrid_Message(&self->grid.window,msg);
 }
