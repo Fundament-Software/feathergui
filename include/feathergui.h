@@ -179,6 +179,7 @@ FG_EXTERN AbsVec FG_FASTCALL ResolveVec(fgChild* p, CVec* v);
 FG_EXTERN AbsRect FG_FASTCALL ResolveRect(fgChild* p, CRect* v);
 FG_EXTERN void FG_FASTCALL ResolveRectCache(AbsRect* r, CRect* v, AbsRect* last);
 FG_EXTERN char FG_FASTCALL CompareCRects(CRect* l, CRect* r); // Returns 0 if both are the same or 1 otherwise
+FG_EXTERN char FG_FASTCALL CompChildOrder(fgChild* l, fgChild* r);
 FG_EXTERN char FG_FASTCALL MsgHitAbsRect(FG_Msg* msg, AbsRect* r);
 FG_EXTERN char FG_FASTCALL MsgHitCRect(FG_Msg* msg, fgChild* child);
 FG_EXTERN void FG_FASTCALL CRect_DoCenter(CRect* self, unsigned char axis);

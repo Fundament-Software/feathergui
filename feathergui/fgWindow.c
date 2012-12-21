@@ -5,6 +5,7 @@
 
 fgWindow* fgFocusedWindow = 0;
 fgWindow* fgLastHover = 0;
+VectWindow fgNonClipping = {0};
 
 void FG_FASTCALL fgWindow_Init(fgWindow* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent)
 { 
@@ -27,6 +28,8 @@ void FG_FASTCALL fgWindow_Destroy(fgWindow* self)
 char FG_FASTCALL fgWindow_Message(fgWindow* self, FG_Msg* msg)
 {
   //FG_Msg aux;
+  FG_UINT i;
+  char flip;
   CRect* cr;
   assert(self!=0);
   assert(msg!=0);
@@ -65,6 +68,9 @@ char FG_FASTCALL fgWindow_Message(fgWindow* self, FG_Msg* msg)
   case FG_ADDCHILD:
     fgChild_SetParent((fgChild*)msg->other,&self->element);
     break;
+  case FG_REMOVECHILD:
+    fgChild_SetParent((fgChild*)msg->other,0);
+    break;
   case FG_SETPARENT:
     fgChild_SetParent(&self->element,(fgChild*)msg->other);
     break;
@@ -79,15 +85,29 @@ char FG_FASTCALL fgWindow_Message(fgWindow* self, FG_Msg* msg)
     ((fgStatic*)msg->other)->element.parent=0;
     fgStatic_SetWindow((fgStatic*)msg->other,0);
     break;
-  case FG_SETCLIP:
-    self->flags|=((msg->otherint==0)<<2);
+  case FG_SETCLIP: // If 0 is sent in, disable clipping, otherwise enable. Our internal flag is 1 if clipping disabled, 0 otherwise.
+    flip = ((msg->otherint==0)<<2)^(self->flags&4);
+    if(msg->otherint!=0 && flip!=0) // Enable clipping, remove from nonclipping array
+    {
+      for(i=0; i<fgNonClipping.l; ++i)
+        if(fgNonClipping.p[i]==self)
+        {
+          Remove_VectWindow(&fgNonClipping,i);
+          break;
+        }
+    }
+    else if(msg->otherint==0 && flip!=0) // Disable clipping, add to nonclipping array
+      Add_VectWindow(&fgNonClipping,self); //DON'T sort this; if any parent window changed its zorder everything would explode
+    self->flags^=flip;
     break;
-  case FG_SHOW:
-    self->flags|=((msg->otherint==0)<<3);
+  case FG_SHOW: // If 0 is sent in, hide, otherwise show. Our internal flag is 1 if hidden, 0 if shown.
+    flip = ((msg->otherint==0)<<3)^(self->flags&8);
+    self->flags^=flip;
     break;
   case FG_SETCENTERED:
     cr = &self->element.element.area;
-    self->flags|=(msg->otherint&3);
+    flip = (msg->otherint&3)^(self->flags&3);
+    self->flags^=flip;
     cr->left.rel=(FREL)(((self->flags&1)!=0)?0.5:0.0); //x-axis center
     cr->top.rel=(FREL)(((self->flags&2)!=0)?0.5:0.0); //y-axis center
     CRect_DoCenter(cr,self->flags);

@@ -149,3 +149,8 @@ char FG_FASTCALL CompareCRects(CRect* l, CRect* r)
   if(l->left.abs!=r->left.abs) return 1; // Optimization to catch a whole ton of move situations where almost all abs coords change.
   return memcmp(l,r,sizeof(CRect))!=0;
 }
+
+char FG_FASTCALL CompChildOrder(fgChild* l, fgChild* r)
+{
+
+}

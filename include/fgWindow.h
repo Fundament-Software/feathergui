@@ -20,8 +20,11 @@ typedef struct __WINDOW {
   struct __WINDOW* contextmenu;
 } fgWindow;
 
+MAKE_VECTOR(fgWindow*,VectWindow);
+
 FG_EXTERN fgWindow* fgFocusedWindow;
 FG_EXTERN fgWindow* fgLastHover; // Last window the mouse moved over, used to generate MOUSEON and MOUSEOFF events
+FG_EXTERN VectWindow fgNonClipping;
 
 FG_EXTERN void FG_FASTCALL fgWindow_Init(fgWindow* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent);
 FG_EXTERN void FG_FASTCALL fgWindow_Destroy(fgWindow* self);
