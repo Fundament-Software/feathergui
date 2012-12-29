@@ -12,14 +12,14 @@ extern "C" {
 
 // A button is usually implemented as a simple background design, plus a centering GUI component that takes a static and
 // displays it in the center of the button.
-typedef struct {
+typedef struct _FG_BUTTON {
   fgWindow window;
   fgStatic* skin[4]; // index 0 is the item, 1 is the skin, 2 is hover, 3 is active
 } fgButton;
 
-FG_EXTERN void FG_FASTCALL fgButton_Create(fgStatic* item);
-FG_EXTERN void FG_FASTCALL fgButton_Init(fgButton* self, fgStatic* item);
-FG_EXTERN char FG_FASTCALL fgButton_Message(fgButton* self, FG_Msg* msg);
+FG_EXTERN fgButton* FG_FASTCALL fgButton_Create(fgStatic* item);
+FG_EXTERN void FG_FASTCALL fgButton_Init(fgButton* self);
+FG_EXTERN char FG_FASTCALL fgButton_Message(fgWindow* self, const FG_Msg* msg);
 
 #ifdef  __cplusplus
 }

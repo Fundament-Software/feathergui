@@ -5,22 +5,30 @@
 
 void FG_FASTCALL fgGrid_Init(fgGrid* self)
 {
+  assert(self!=0);
   fgWindow_Init(&self->window,0);
+  self->window.message=&fgGrid_Message;
   memset(&self->margins,0,sizeof(AbsRect));
   memset(&self->dimensions,0,sizeof(AbsRect));
 }
-char FG_FASTCALL fgGrid_Message(fgGrid* self, FG_Msg* msg)
+char FG_FASTCALL fgGrid_Message(fgGrid* self, const FG_Msg* msg)
 {
+  assert(self!=0 && msg!=0);
   switch(msg->type)
   {
   case FG_ADDCHILD:
   case FG_REMOVECHILD:
-  case FG_ADDRENDERABLE:
+  case FG_ADDSTATIC:
     
     break;
-  case FG_REMOVERENDERABLE:
+  case FG_REMOVESTATIC:
 
     break;
   }
-  return fgWindow_Message(self,msg);
+  return fgWindow_Message((fgWindow*)self,msg);
+}
+
+fgChild* FG_FASTCALL fgGrid_HitElement(fgGrid* self, FABS x, FABS y)
+{
+  return 0;
 }

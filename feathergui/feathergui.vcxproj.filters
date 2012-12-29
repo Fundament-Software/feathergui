@@ -76,5 +76,8 @@
     <ClCompile Include="fgStatic.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="fgTopWindow.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

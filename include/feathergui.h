@@ -110,11 +110,12 @@ typedef struct {
 typedef struct _FG_CHILD {
   fgElement element;
   void (FG_FASTCALL *destroy)(void* self); // virtual destructor
+  void (*free)(void* self); // pointer to deallocation function
   struct _FG_CHILD* parent;
   struct _FG_CHILD* root; // children list root
   struct _FG_CHILD* next;
   struct _FG_CHILD* prev;
-  FG_UINT order; // order relative to other windows or statics
+  int order; // order relative to other windows or statics
 } fgChild;
 
 
@@ -137,15 +138,17 @@ enum FG_MSGTYPE
   FG_LOSTFOCUS,
   FG_MOVE, // Passed when any change is made to an element
   FG_SETPARENT,
-  FG_SETCLIP, // Send an otherint equal to 0 to disable cliping, otherwise its clipped by parent
-  FG_SETCENTERED, // Removes centering if otherint is 0, centers x-axis on 1, y-axis on 2, both on 3
-  FG_SETTILE, // fgGrid only, 16 tiles on x-axis, 32 tiles on y-axis, 48 both.
+  FG_SETFLAG, // Send in the flag in the first int arg, then set it to on or off (1 or 0) in the second argument
   FG_SETORDER, // Sets the order of a window
-  FG_ADDITEM, // Used for fgMenu, takes a pointer to a string
-  FG_ADDCHILD, // Pass an FG_Msg with this type and set the other pointer to the child that should be added.
-  FG_ADDRENDERABLE, // Send a fgStatic in other with an optional ID for its skin index in otheraux.
-  FG_REMOVERENDERABLE,
+  FG_SETCAPTION, 
+  FG_SETALPHA, // Used so an entire widget can be made to fade in or out.
+  FG_ADDITEM, // Used for anything involving items (menus, lists, etc)
+  FG_ADDSUBMENU,
+  FG_ADDCHILD, // Pass an FG_Msg with this type and set the other pointer to the child that should be added. Must be an fgWindow* pointer.
+  FG_ADDSTATIC, // Send a fgStatic in other with an optional ID for its skin index in otheraux.
+  FG_REMOVESTATIC,
   FG_REMOVECHILD,
+  FG_REMOVEITEM,
   FG_SHOW, // Send an otherint equal to 0 to hide, otherwise its made visible
   FG_CLICKED, // Used for several controls to signify the user making a valid click (fgButton, fgCombobox, etc.)
   FG_CUSTOMEVENT
@@ -166,26 +169,27 @@ typedef struct __FG_MSG {
     };
     struct { float joyvalue; short joyaxis; }; // JOYAXIS
     struct { char joydown; short joybutton; }; // JOYBUTTON
-    struct { void* other; unsigned char otheraux; }; // Used by any generic messages (FG_ADDCHILD, FG_SETPARENT, etc.)
-    int otherint; // Used by any generic message that want an int (FG_SETCLIP, FG_SETCENTERED, etc.)
+    struct { void* other; unsigned int otheraux; }; // Used by any generic messages (FG_ADDCHILD, FG_SETPARENT, etc.)
+    struct { void* other1; void* other2; }; // Used by anything requiring 2 pointers, possibly for a return value.
+    struct { int otherint; int otherintaux; }; // Used by any generic message that want an int (FG_SETCLIP, FG_SETCENTERED, etc.)
   };
 } FG_Msg;
 
-FG_EXTERN void FG_FASTCALL fgChild_Init(fgChild* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent);
+FG_EXTERN void FG_FASTCALL fgChild_Init(fgChild* self);
 FG_EXTERN void FG_FASTCALL fgChild_Destroy(fgChild* self);
 FG_EXTERN void FG_FASTCALL fgChild_SetParent(fgChild* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent);
 
-FG_EXTERN AbsVec FG_FASTCALL ResolveVec(fgChild* p, CVec* v);
-FG_EXTERN AbsRect FG_FASTCALL ResolveRect(fgChild* p, CRect* v);
-FG_EXTERN void FG_FASTCALL ResolveRectCache(AbsRect* r, CRect* v, AbsRect* last);
-FG_EXTERN char FG_FASTCALL CompareCRects(CRect* l, CRect* r); // Returns 0 if both are the same or 1 otherwise
-FG_EXTERN char FG_FASTCALL CompChildOrder(fgChild* l, fgChild* r);
-FG_EXTERN char FG_FASTCALL MsgHitAbsRect(FG_Msg* msg, AbsRect* r);
-FG_EXTERN char FG_FASTCALL MsgHitCRect(FG_Msg* msg, fgChild* child);
-FG_EXTERN void FG_FASTCALL CRect_DoCenter(CRect* self, unsigned char axis);
+FG_EXTERN AbsVec FG_FASTCALL ResolveVec(const CVec* v, const AbsRect* last);
+FG_EXTERN void FG_FASTCALL ResolveRect(const fgChild* self, AbsRect* out);
+FG_EXTERN void FG_FASTCALL ResolveRectCache(AbsRect* r, const CRect* v, const AbsRect* last);
+FG_EXTERN char FG_FASTCALL CompareCRects(const CRect* l, const CRect* r); // Returns 0 if both are the same or 1 otherwise
+FG_EXTERN char FG_FASTCALL CompChildOrder(const fgChild* l, const fgChild* r);
+FG_EXTERN char FG_FASTCALL MsgHitAbsRect(const FG_Msg* msg, const AbsRect* r);
+FG_EXTERN char FG_FASTCALL MsgHitCRect(const FG_Msg* msg, const fgChild* child);
 FG_EXTERN void FG_FASTCALL LList_Remove(fgChild* self, fgChild** root);
 FG_EXTERN void FG_FASTCALL LList_Add(fgChild* self, fgChild** root);
 FG_EXTERN void FG_FASTCALL LList_Insert(fgChild* self, fgChild* target, fgChild** root);
+FG_EXTERN void FG_FASTCALL VirtualFreeChild(fgChild* self);
 
 #ifdef  __cplusplus
 }

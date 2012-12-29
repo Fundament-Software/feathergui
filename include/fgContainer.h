@@ -13,13 +13,13 @@ extern "C" {
 // A container is a collection of fgChild objects that divide a window into areas.
 typedef struct {
   fgWindow window;
-  fgChild* regions;
+  fgWindow* regions;
 } fgContainer;
 
 FG_EXTERN void FG_FASTCALL fgContainer_Init(fgContainer* self);
 FG_EXTERN void FG_FASTCALL fgContainer_Destroy(fgContainer* self);
-FG_EXTERN fgChild* FG_FASTCALL fgContainer_AddRegion(fgContainer* self, fgElement* region);
-FG_EXTERN void FG_FASTCALL fgContainer_RemoveRegion(fgContainer* self, fgChild* region);
+FG_EXTERN fgWindow* FG_FASTCALL fgContainer_AddRegion(fgContainer* self, fgElement* region);
+FG_EXTERN void FG_FASTCALL fgContainer_RemoveRegion(fgContainer* self, fgWindow* region);
 
 #ifdef  __cplusplus
 }

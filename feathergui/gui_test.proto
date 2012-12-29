@@ -19,11 +19,44 @@ message Element {
 }
 
 message Window {
-  optional string class = 1; // For top level GUI definitions, defines the class, and for children, specifies what class to use.
-  optional uint32 id = 2; // Only used for differentiating children. Note that a GUI layout is a bunch of children attached to the root definition.
-  optional string name = 5; // You may name a GUI element, but this won't be used outside of the implementation.
-  required Element element = 3; // Specifies the attributes of the GUI window
-  repeated Window children = 4; // Specifies children of this window.
+  required Element element = 1;
+  optional uint32 id = 3;
+  optional uint32 order = 4;
+  optional uint32 flags = 5;
+  optional Widget contextmenu = 6;
+  repeated Widget children = 7;
+  repeated uint32 static = 8 [packed=true]; // This is a REFERENCE to a static's id, so windows can re-use definitions
+}
+
+// Lists all possible widget types. If you build your own type, you can safely add it here thanks to protobuf versioning
+message Widget {
+  enum CLASSID {
+    REGION = 0;
+    WINDOW = 1;
+    BUTTON = 2;
+    CHECKBOX = 3;
+    COMBOBOX = 4;
+    CONTAINER = 5;
+    GRID = 6;
+    LIST = 7;
+    MENU = 8;
+    PROGRESSBAR = 9;
+    SCROLLBAR = 10;
+    SLIDER = 11;
+    TEXTBOX = 12;
+    TOOLBAR = 13;
+    TOPWINDOW = 14;
+    TREE = 15;
+  }
+  optional CLASSID classid = 1;
+  optional Window window = 2;
+  optional Checkbox checkbox = 3;
+  optional Container container = 4;
+  optional Grid grid = 5;
+  optional List list = 6;
+  optional Slider slider = 7;
+  optional TopWindow topwindow = 8;
+  optional Tree tree = 9;
 }
 
 message Data { // This defines anything that can either be a relative or absolute filepath, or embedded as bytes in the file.
@@ -31,22 +64,46 @@ message Data { // This defines anything that can either be a relative or absolut
   optional bytes data = 2;
 }
 
-message Renderable {
+message Static {
   required Element element = 1;
-  optional uint32 id = 6; // Optional ID unique to all skins for a GUI element tree. Used so implementations can manipulate specific renderables.
-  optional Data image = 2; // If image and text and vector are all empty, this is treated as an invisible container.
-  optional string text = 3; // Only one of image, text, and vector may be specified, If multiple ones are specified, a vector, then an image, then text will be used, whichever one is defined first in that order.0
-  optional Data vector = 4; // Vector may not be supported by some implementations. You can take advantage of the above evaluation order by specifying both vector and an image. If vectors are not supported, it will fall back to the image.
-  optional bool linerect = 7; // If specified, true will draw a line from topleft to bottomright, and false will draw a rectangle in the area.
-  repeated Renderable children = 5;
+  optional uint32 order = 2;
+  optional uint32 id = 3; // Optional ID unique to all statics for a GUI element tree. Used by windows to find Static definitions, therefore allowing them to be reused.
+  optional Data data = 4;
+  enum DATATYPE {
+    IMAGE = 0;
+    TEXT = 1;
+    VECTOR = 2;
+    LINE = 3;
+    RECT = 4;
+  }
+  optional DATATYPE type = 5;
+  repeated Static children = 6;
 }
 
-message SkinTarget {
-  optional string class = 1; // Specifying a class will create a default skin for that class, overriding any previous defaults. If this isn't used in a top-level GUI element, it will instead override the default for all children in that element and below. Multiple specifications will override each other in terms of increasing depth.
-  optional uint32 id = 2; // Specifying an ID allows you to target a specific child element of some GUI element.
+message Checkbox {
+  required Window window = 1;
 }
 
-message Skin {
-  repeated SkinTarget targets = 1; // Each string goes down the heirarchy once. The first string must be a class to specify the top-level element. All other strings can either be IDs to target specific children, or classes to target all children of that class type within the top-level element.
-  repeated Renderable skin = 2; 
+message Container {
+  required Window window = 1;
+}
+
+message Grid {
+  required Window window = 1;
+}
+
+message List {
+  required Window window = 1;
+}
+
+message Slider {
+  required Window window = 1;
+}
+
+message TopWindow {
+  required Window window = 1;
+}
+
+message Tree {
+  required Window window = 1;
 }

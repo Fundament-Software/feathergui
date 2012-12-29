@@ -25,7 +25,18 @@ enum FG_RENDERMSG
   FG_RSETFLAGS,
   FG_RSETORDER,
   FG_RSETFONT,
+  FG_RCLONE,
   FG_RCUSTOM
+};
+
+enum FG_TEXTFLAGS
+{
+  FGTEXT_CHARWRAP, // Wraps lines that go past the edge of the container by character
+  FGTEXT_WORDWRAP, // Wraps lines that go past the edge of the container by word (the definition of a "word" is implementation specific)
+  FGTEXT_ELLIPSES, // Lines that go past the bounderies of the text object are cut off with an ellipses (...)
+  FGTEXT_RTL, // Forces right-to-left text rendering.
+  FGTEXT_RIGHTALIGN,
+  FGTEXT_CENTER, // Text horizontal centering behaves differently, because it centers each individual line.
 };
 
 struct __WINDOW;
@@ -42,13 +53,13 @@ FG_EXTERN void FG_FASTCALL fgStatic_Destroy(fgStatic* self);
 FG_EXTERN void FG_FASTCALL fgStatic_Message(fgStatic* self, unsigned char type, void* arg);
 FG_EXTERN void FG_FASTCALL fgStatic_SetWindow(fgStatic* self, struct __WINDOW* window);
 FG_EXTERN void FG_FASTCALL fgStatic_RemoveParent(fgStatic* self);
+FG_EXTERN void FG_FASTCALL fgStatic_NotifyParent(fgStatic* self);
 
 FG_EXTERN fgStatic* FG_FASTCALL fgLoadImage(const char* path);
 FG_EXTERN fgStatic* FG_FASTCALL fgLoadImageData(const void* data, size_t length);
 FG_EXTERN fgStatic* FG_FASTCALL fgLoadVector(const char* path);
 FG_EXTERN fgStatic* FG_FASTCALL fgLoadVectorData(const void* data, size_t length);
 FG_EXTERN fgStatic* FG_FASTCALL fgLoadText(const char* text, unsigned int flags);
-FG_EXTERN void FG_FASTCALL FreeStatic(fgStatic* p);
 FG_EXTERN void FG_FASTCALL SetSkinArray(fgStatic** pp, unsigned char size, unsigned char index);
 
 // An item represented by both text and an image is extremely common, so we define this helper struct to make things simpler

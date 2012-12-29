@@ -133,6 +133,7 @@
     <ClCompile Include="fgMenu.c" />
     <ClCompile Include="fgStatic.c" />
     <ClCompile Include="fgRoot.c" />
+    <ClCompile Include="fgTopWindow.c" />
     <ClCompile Include="fgWindow.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

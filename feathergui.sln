@@ -16,6 +16,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fgTest", "fgTest\fgTest.vcx
 		{65FDFEE1-D190-4A98-B590-55D9FA97E86B} = {65FDFEE1-D190-4A98-B590-55D9FA97E86B}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fgLayoutEditor", "fgLayoutEditor\fgLayoutEditor.vcxproj", "{D3B96E3C-5586-49B0-ABA7-09E4F3734A3E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -38,6 +40,10 @@ Global
 		{F03E13FD-65E4-4026-BFDA-5A0E4B17B8B9}.Debug|Win32.Build.0 = Debug|Win32
 		{F03E13FD-65E4-4026-BFDA-5A0E4B17B8B9}.Release|Win32.ActiveCfg = Release|Win32
 		{F03E13FD-65E4-4026-BFDA-5A0E4B17B8B9}.Release|Win32.Build.0 = Release|Win32
+		{D3B96E3C-5586-49B0-ABA7-09E4F3734A3E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D3B96E3C-5586-49B0-ABA7-09E4F3734A3E}.Debug|Win32.Build.0 = Debug|Win32
+		{D3B96E3C-5586-49B0-ABA7-09E4F3734A3E}.Release|Win32.ActiveCfg = Release|Win32
+		{D3B96E3C-5586-49B0-ABA7-09E4F3734A3E}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

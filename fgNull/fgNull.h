@@ -15,12 +15,8 @@
 extern "C" {
 #endif
 
-FG_EXTERN fgRoot* FG_FASTCALL fgInitialize();
-FG_EXTERN void FG_FASTCALL fgTerminate(fgRoot* root);
-
-FG_EXTERN void FG_FASTCALL fgButton_Create(fgStatic* item);
-FG_EXTERN void FG_FASTCALL fgMenu_Create();
-FG_EXTERN void FG_FASTCALL fgTopWindow_Create(fgRoot* root);
+FG_EXTERN void (FG_FASTCALL *debugmsghook)(fgWindow* self, const FG_Msg* msg);
+//FG_EXTERN void FG_FASTCALL FreeStatic(fgStatic* p);
 
 #ifdef  __cplusplus
 }

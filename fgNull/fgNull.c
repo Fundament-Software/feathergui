@@ -14,6 +14,19 @@
 #pragma comment(lib, "../bin/feathergui.lib")
 #endif
 
+void (FG_FASTCALL *debugmsghook)(fgWindow* self, const FG_Msg* msg)=0;
+
+#define BUILDDEBUGMSG(TYPE) char FG_FASTCALL fgdebug_Message_##TYPE##(fgWindow* self, const FG_Msg* msg) \
+{ \
+  if(debugmsghook!=0) (*debugmsghook)((fgWindow*)self,msg); \
+  return TYPE##_Message(self,msg); \
+}
+
+BUILDDEBUGMSG(fgButton)
+BUILDDEBUGMSG(fgMenu)
+BUILDDEBUGMSG(fgTopWindow)
+BUILDDEBUGMSG(fgWindow)
+
 fgStatic* NullRenderable()
 {
   fgStatic* r = (fgStatic*)malloc(sizeof(fgStatic));
@@ -40,15 +53,44 @@ fgStatic* FG_FASTCALL fgLoadText(const char* text, unsigned int flags)
 {
   return NullRenderable();
 }
-void FG_FASTCALL FreeStatic(fgStatic* p)
+fgButton* FG_FASTCALL fgButton_Create(fgStatic* item)
 {
-  free(p);
+  fgButton* r = (fgButton*)malloc(sizeof(fgButton));
+  r->window.message=&fgdebug_Message_fgButton;
+  fgButton_Init(r);
+  return r;
 }
+fgMenu* FG_FASTCALL fgMenu_Create()
+{
+  fgMenu* r = (fgMenu*)malloc(sizeof(fgMenu));
+  r->grid.window.message=&fgdebug_Message_fgMenu;
+  fgMenu_Init(r);
+  return r;
+}
+fgTopWindow* FG_FASTCALL fgTopWindow_Create(fgRoot* root)
+{
+  fgTopWindow* r = (fgTopWindow*)malloc(sizeof(fgTopWindow));
+  fgTopWindow_Init(r);
+  r->window.message=&fgdebug_Message_fgTopWindow;
+  r->region.message=&fgdebug_Message_fgWindow;
+  fgWindow_VoidMessage(r,FG_SETPARENT,root);
+  return r;
+}
+
+void FG_FASTCALL fgRoot_destroy(fgRoot* self)
+{
+  (*self->mouse.element.destroy)(&self->mouse);
+  fgWindow_Destroy(self);
+}
+
 fgRoot* FG_FASTCALL fgInitialize()
 {
   fgRoot* r = (fgRoot*)malloc(sizeof(fgRoot));
-  fgChild_Init((fgChild*)r,0);
-  r->behaviorhook=fgRoot_BehaviorDefault;
+  fgWindow_Init((fgWindow*)r,0);
+  r->gui.element.destroy=&fgRoot_destroy;
+  r->behaviorhook=&fgRoot_BehaviorDefault;
   r->keymsghook=0;
+  r->winrender=&fgRoot_WinRender;
+  fgWindow_Init(&r->mouse);
   return r;
 }

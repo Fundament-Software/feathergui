@@ -4,22 +4,27 @@
 #ifndef __FG_TOPWINDOW_H__
 #define __FG_TOPWINDOW_H__
 
-#include "fgContainer.h"
+#include "fgWindow.h"
 #include "fgRoot.h"
 
 #ifdef  __cplusplus
 extern "C" {
 #endif
 
+struct _FG_BUTTON;
+
 // A top-level window is an actual window with a titlebar that can be dragged and resized.
 typedef struct {
-  fgContainer window;
+  fgWindow window;
+  fgWindow region;
+  struct _FG_BUTTON* controls[3]; // 0 is the close button, 1 is the maximize/restore button, 2 is the minimize button
+  AbsRect prevrect; // Stores where the window was before being maximized
 } fgTopWindow;
 
-FG_EXTERN void FG_FASTCALL fgTopfgWindow_Create(fgRoot* root);
-FG_EXTERN void FG_FASTCALL fgTopfgWindow_Init(fgTopWindow* self);
-FG_EXTERN void FG_FASTCALL fgTopfgWindow_Destroy(fgTopWindow* self);
-FG_EXTERN void FG_FASTCALL fgTopfgWindow_Message(fgWindow* self, FG_Msg* msg);
+FG_EXTERN fgTopWindow* FG_FASTCALL fgTopWindow_Create(fgRoot* root);
+FG_EXTERN void FG_FASTCALL fgTopWindow_Init(fgTopWindow* self);
+FG_EXTERN void FG_FASTCALL fgTopWindow_Destroy(fgTopWindow* self);
+FG_EXTERN char FG_FASTCALL fgTopWindow_Message(fgWindow* self, const FG_Msg* msg);
 
 #ifdef  __cplusplus
 }

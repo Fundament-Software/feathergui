@@ -10,10 +10,18 @@
 extern "C" {
 #endif
 
+enum FG_WINFLAGS
+{
+  FGWIN_NOCLIP=1,
+  FGWIN_HIDDEN=2,
+  FGWIN_TILEX=4,
+  FGWIN_TILEY=8
+};
+
 // Defines the base GUI element, a window. This is not an actual top level window.
 typedef struct __WINDOW {
   fgChild element;
-  char (FG_FASTCALL *message)(struct __WINDOW* self, FG_Msg* msg);
+  char (FG_FASTCALL *message)(struct __WINDOW* self, const FG_Msg* msg);
   FG_UINT id;
   unsigned char flags; // 1 is x-axis centering, 2 is y-axis, 3 is both, 4 is clipping disabled, 8 is not visible
   fgStatic* rlist;
@@ -26,15 +34,15 @@ FG_EXTERN fgWindow* fgFocusedWindow;
 FG_EXTERN fgWindow* fgLastHover; // Last window the mouse moved over, used to generate MOUSEON and MOUSEOFF events
 FG_EXTERN VectWindow fgNonClipping;
 
-FG_EXTERN void FG_FASTCALL fgWindow_Init(fgWindow* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent);
+FG_EXTERN void FG_FASTCALL fgWindow_Init(fgWindow* BSS_RESTRICT self, fgWindow* BSS_RESTRICT parent);
 FG_EXTERN void FG_FASTCALL fgWindow_Destroy(fgWindow* self);
-FG_EXTERN char FG_FASTCALL fgWindow_Message(fgWindow* self, FG_Msg* msg);
+FG_EXTERN char FG_FASTCALL fgWindow_Message(fgWindow* self, const FG_Msg* msg);
 FG_EXTERN void FG_FASTCALL fgWindow_SetElement(fgWindow* self, fgElement* element);
 FG_EXTERN void FG_FASTCALL fgWindow_SetArea(fgWindow* self, CRect* area);
 FG_EXTERN void FG_FASTCALL fgWindow_BasicMessage(fgWindow* self, unsigned char type); // Shortcut for sending type messages with no data
 FG_EXTERN void FG_FASTCALL fgWindow_VoidMessage(fgWindow* self, unsigned char type, void* data); // Shortcut for sending void* messages
 FG_EXTERN void FG_FASTCALL fgWindow_IntMessage(fgWindow* self, unsigned char type, int data); // Shortcut for sending int messages
-FG_EXTERN void FG_FASTCALL fgWindow_SetParent(fgWindow* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent);
+FG_EXTERN void FG_FASTCALL DoSkinCheck(fgWindow* self, fgStatic** skins, const FG_Msg* msg);
 
 #ifdef  __cplusplus
 }
