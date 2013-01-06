@@ -1,4 +1,4 @@
-// Copyright ©2012 Black Sphere Studios
+// Copyright ©2013 Black Sphere Studios
 // For conditions of distribution and use, see copyright notice in "feathergui.h"
 
 #include "fgRoot.h"
@@ -12,8 +12,8 @@ char fgRoot_RInject(fgWindow* self, const FG_Msg* msg, AbsRect* area)
   AbsRect curarea;
   fgChild* cur = self->element.root;
   assert(msg!=0 && area!=0);
-  ResolveRectCache(&curarea,&self->element.element.area,area);
-  if(!MsgHitAbsRect(msg,&curarea)) //If the event completely misses our area we must reject it
+  ResolveRectCache(&curarea,&self->element.element,area);
+  if((self->flags&FGWIN_HIDDEN)!=0 || !MsgHitAbsRect(msg,&curarea)) //If the event completely misses us, or we're hidden, we must reject it
     return 1;
 
   while(cur) // Try to inject to any children we have
@@ -36,7 +36,7 @@ int fgwincomp(const void* l,const void* r)
   return CompChildOrder(l,r);
 }
 
-void FG_FASTCALL fgRoot_Inject(fgRoot* self, const FG_Msg* msg)
+char FG_FASTCALL fgRoot_Inject(fgRoot* self, const FG_Msg* msg)
 {
   static AbsRect absarea = { 0,0,0,0 };
   CRect* mousearea;
@@ -50,10 +50,9 @@ void FG_FASTCALL fgRoot_Inject(fgRoot* self, const FG_Msg* msg)
   case FG_KEYDOWN:
   case FG_MOUSESCROLL:
     if(!(*self->keymsghook)(msg))
-      return;
+      return 0;
     if(fgFocusedWindow)
-      (*fgFocusedWindow->message)(fgFocusedWindow,msg);
-    break;
+      return (*fgFocusedWindow->message)(fgFocusedWindow,msg);
   case FG_MOUSEDOWN:
   case FG_MOUSEUP:
   case FG_MOUSEMOVE:
@@ -63,10 +62,10 @@ void FG_FASTCALL fgRoot_Inject(fgRoot* self, const FG_Msg* msg)
 
     if(fgFocusedWindow)
       if(!(*fgFocusedWindow->message)(fgFocusedWindow,msg))
-        return;
+        return 1;
 
     for(i=0; i < fgNonClipping.l; ++i) // Make a list of all nonclipping windows this event intersects
-      if(MsgHitCRect(msg,(fgChild*)fgNonClipping.p[i]))
+      if((fgNonClipping.p[i]->flags&FGWIN_HIDDEN)==0 && MsgHitCRect(msg,(fgChild*)fgNonClipping.p[i]))
         Add_VectWindow(&fgNonClipHit,fgNonClipping.p[i]);
     if(fgNonClipHit.l>0) // Sort them in top-down order
       qsort(fgNonClipHit.p,fgNonClipHit.l,sizeof(fgWindow*),&fgwincomp); 
@@ -83,9 +82,11 @@ void FG_FASTCALL fgRoot_Inject(fgRoot* self, const FG_Msg* msg)
       fgWindow_BasicMessage(fgLastHover,FG_MOUSEOFF);
       fgLastHover=0;
     }
-    break;
+    fgNonClipHit.l=0;
+    return 1;
   }
   fgNonClipHit.l=0;
+  return 0;
 }
 
 char FG_FASTCALL fgRoot_BehaviorDefault(fgWindow* self, const FG_Msg* msg)
@@ -103,32 +104,32 @@ void FG_FASTCALL fgRoot_RListRender(fgStatic* self, AbsRect* area)
 {
   AbsRect curarea;
   assert(self!=0 && area!=0);
-  ResolveRectCache(&curarea,&self->element.element.area,area);
+  ResolveRectCache(&curarea,&self->element.element,area);
   while(self)
   {
     (*self->message)(self,FG_RDRAW,&curarea);
-    if(self->element.root)
-      fgRoot_RListRender((fgStatic*)self->element.root,&curarea);
-    self=(fgStatic*)self->element.next;
+    if(self->element.last) // Render everything backwards
+      fgRoot_RListRender((fgStatic*)self->element.last,&curarea);
+    self=(fgStatic*)self->element.prev;
   }
 }
 
 void FG_FASTCALL fgRoot_WinRender(fgWindow* self, AbsRect* area)
 {
   AbsRect curarea;
-  fgChild* cur = self->element.root;
+  fgChild* cur = self->element.last;
   assert(area!=0);
-  ResolveRectCache(&curarea,&self->element.element.area,area);
+  ResolveRectCache(&curarea,&self->element.element,area);
 
   if(self->flags&FGWIN_HIDDEN) // If we aren't visible, none of our children are either, so bail out.
     return;
-  if(self->rlist)
-    fgRoot_RListRender(self->rlist,&curarea);
+  if(self->rlast)
+    fgRoot_RListRender(self->rlast,&curarea);
   
-  while(cur) // Render all our children
+  while(cur) // Render all our children (backwards)
   {
     fgRoot_WinRender((fgWindow*)cur,&curarea);
-    cur=cur->next; 
+    cur=cur->prev; 
   } 
 }
 

@@ -1,4 +1,4 @@
-// Copyright ©2012 Black Sphere Studios
+// Copyright ©2013 Black Sphere Studios
 // For conditions of distribution and use, see copyright notice in "feathergui.h"
 
 #ifndef __FG_TOPWINDOW_H__
@@ -24,7 +24,7 @@ typedef struct {
 FG_EXTERN fgTopWindow* FG_FASTCALL fgTopWindow_Create(fgRoot* root);
 FG_EXTERN void FG_FASTCALL fgTopWindow_Init(fgTopWindow* self);
 FG_EXTERN void FG_FASTCALL fgTopWindow_Destroy(fgTopWindow* self);
-FG_EXTERN char FG_FASTCALL fgTopWindow_Message(fgWindow* self, const FG_Msg* msg);
+FG_EXTERN char FG_FASTCALL fgTopWindow_Message(fgTopWindow* self, const FG_Msg* msg);
 
 #ifdef  __cplusplus
 }

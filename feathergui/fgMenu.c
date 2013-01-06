@@ -1,4 +1,4 @@
-// Copyright ©2012 Black Sphere Studios
+// Copyright ©2013 Black Sphere Studios
 // For conditions of distribution and use, see copyright notice in "feathergui.h"
 
 #include "fgMenu.h"
@@ -8,13 +8,26 @@ void FG_FASTCALL fgMenu_Init(fgMenu* self)
 {
   FG_Msg msg = {0};
   assert(self!=0);
+  fgWindow_Init(&self->window,0);
+  self->window.element.destroy=&fgMenu_Destroy;
   fgGrid_Init(&self->grid);
+  fgWindow_VoidMessage(&self->grid,FG_SETPARENT,self);
+  fgWindow_Init(&self->overlay,self);
+  self->expanded=0;
+  self->prevtime=0;
   self->grid.window.message=&fgMenu_Message;
   msg.type=FG_SETFLAG;
   msg.otherint=FGWIN_NOCLIP;
   msg.otherintaux=1;
   fgMenu_Message((fgWindow*)self,&msg); // All menus are nonclipping by necessity unless it morphs into a menubar
 }
+void FG_FASTCALL fgMenu_Destroy(fgMenu* self)
+{
+  fgWindow_Destroy(&self->overlay);
+  fgWindow_Destroy(&self->grid);
+  fgWindow_Destroy(&self->window);
+}
+
 char FG_FASTCALL fgMenu_Message(fgMenu* self, const FG_Msg* msg)
 {
   long long curtime;

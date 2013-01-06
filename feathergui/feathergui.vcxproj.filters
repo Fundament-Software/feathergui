@@ -50,11 +50,23 @@
     <ClInclude Include="..\include\fgStatic.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\fgList.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\fgScrollbar.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\fgCombobox.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\fgTabGroup.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\fgTextbox.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="feathergui.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="fgButton.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -77,6 +89,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="fgTopWindow.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="feathergui.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

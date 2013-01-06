@@ -1,4 +1,4 @@
-// Copyright ©2012 Black Sphere Studios
+// Copyright ©2013 Black Sphere Studios
 // For conditions of distribution and use, see copyright notice in "feathergui.h"
 
 #include "feathergui.h"
@@ -14,9 +14,10 @@ AbsVec FG_FASTCALL ResolveVec(const CVec* v, const AbsRect* last)
 
 void FG_FASTCALL ResolveRect(const fgChild* self, AbsRect* out)
 {
-  static const fgChild* plast=0; // This uses a simple memoization scheme so that repeated calls using the same child don't recalculate everything
-  static AbsRect last;
-  AbsVec center;
+  //static const fgChild* plast=0; // This uses a simple memoization scheme so that repeated calls using the same child don't recalculate everything
+  //static AbsRect last;
+  AbsRect last;
+  AbsVec center = { self->element.center.x.abs,self->element.center.y.abs };
   const CRect* v=&self->element.area;
   assert(out!=0);
   out->left = v->left.abs;
@@ -26,37 +27,50 @@ void FG_FASTCALL ResolveRect(const fgChild* self, AbsRect* out)
 
   if(!self->parent)
     return;
-  if(plast!=self->parent)
-  {
+  //if(plast!=self->parent)
+  //{
     ResolveRect(self->parent,&last);
-    plast=self->parent;
-  }
+  //  plast=self->parent;
+  //}
 
   out->left += lerp(last.left,last.right,v->left.rel);
   out->top += lerp(last.top,last.bottom,v->top.rel);
   out->right += lerp(last.left,last.right,v->right.rel);
   out->bottom += lerp(last.top,last.bottom,v->bottom.rel);
   
-  center = ResolveVec(&self->element.center,out);
+  center.x += (last.right-last.left)*self->element.center.x.rel;
+  center.y += (last.bottom-last.top)*self->element.center.y.rel;
+  //center = ResolveVec(&,r); // We can't use this because the center is relative to the DIMENSIONS, not the actual position.
   out->left -= center.x;
   out->top -= center.y;
   out->right -= center.x;
   out->bottom -= center.y;
 }
 
-void FG_FASTCALL ResolveRectCache(AbsRect* r, const CRect* v, const AbsRect* last)
+void FG_FASTCALL ResolveRectCache(AbsRect* r, const fgElement* elem, const AbsRect* last)
 {
-  assert(r!=0 && v!=0 && last!=0);
+  AbsVec center = { elem->center.x.abs, elem->center.y.abs };
+  const CRect* v=&elem->area;
+  assert(r!=0 && elem!=0 && last!=0);
   r->left = lerp(last->left,last->right,v->left.rel)+v->left.abs;
   r->top = lerp(last->top,last->bottom,v->top.rel)+v->top.abs;
   r->right = lerp(last->left,last->right,v->right.rel)+v->right.abs;
   r->bottom = lerp(last->top,last->bottom,v->bottom.rel)+v->bottom.abs;
+  
+  center.x += (last->right-last->left)*elem->center.x.rel;
+  center.y += (last->bottom-last->top)*elem->center.y.rel;
+  //center = ResolveVec(&,r); // We can't use this because the center is relative to the DIMENSIONS, not the actual position.
+  r->left -= center.x;
+  r->top -= center.y;
+  r->right -= center.x;
+  r->bottom -= center.y;
 }
 
+// This uses a standard inclusive-exclusive rectangle interpretation.
 char FG_FASTCALL MsgHitAbsRect(const FG_Msg* msg, const AbsRect* r)
 {
   assert(msg!=0 && r!=0);
-  return (msg->x <= r->right) && (msg->x >= r->left) && (msg->y <= r->bottom) && (msg->y >= r->top);
+  return (msg->x < r->right) && (msg->x >= r->left) && (msg->y < r->bottom) && (msg->y >= r->top);
 }
 
 char FG_FASTCALL MsgHitCRect(const FG_Msg* msg, const fgChild* child)
@@ -67,38 +81,46 @@ char FG_FASTCALL MsgHitCRect(const FG_Msg* msg, const fgChild* child)
   return MsgHitAbsRect(msg,&r);
 }
 
-void FG_FASTCALL LList_Remove(fgChild* self, fgChild** root)
+void FG_FASTCALL LList_Remove(fgChild* self, fgChild** root, fgChild** last)
 {
   assert(self!=0);
 	if(self->prev != 0) self->prev->next = self->next;
   else *root = self->next;
 	if(self->next != 0) self->next->prev = self->prev;
+  else *last = self->prev;
 }
 
-void FG_FASTCALL LList_Add(fgChild* self, fgChild** root)
+void FG_FASTCALL LList_Add(fgChild* self, fgChild** root, fgChild** last)
 {
-  assert(self!=0);
-  assert(root!=0); // While root cannot be zero, the pointer root is pointing to can be
-  self->prev=0;
-  self->next=*root;
-  if((*root)!=0) (*root)->prev=self;
-  *root=self;
-}
-
-void FG_FASTCALL LList_Insert(fgChild* self, fgChild* target, fgChild** root)
-{
-  assert(self!=0);
-  if(!target) 
-  {
+  fgChild* cur;
+  assert(self!=0 && root!=0); // While root cannot be zero, the pointer root is pointing to can be
+  cur=*root;
+  if(!cur)
+    (*last)=(*root)=self;
+  else if(self->order>=cur->order) {
+    self->next=cur;
+    cur->prev=self;
     *root=self;
-    return;
+  } else if(self->order<(*last)->order) { // shortcut for appending to the end of the list
+    self->prev=*last;
+    (*last)->next=self;
+    *last=self;
+  } else {
+    while(cur->next!=0 && self->order<cur->next->order)
+      cur=cur->next;
+    LList_Insert(self,cur,last); // Add ourselves to our new parent
   }
+}
 
-	self->prev = target->prev;
-	self->next = target;
-	if(target->prev != 0) target->prev->next = self;
-	else *root = self;
-	target->prev = self;
+// This function inserts AFTER the target.
+void FG_FASTCALL LList_Insert(fgChild* self, fgChild* target, fgChild** last)
+{
+  assert(self!=0 && target!=0);
+	self->next = target->next;
+	self->prev = target;
+	if (target->next != 0) target->next->prev = self;
+  else *last = self;
+	target->next = self;
 }
 
 void FG_FASTCALL fgChild_Init(fgChild* self) 
@@ -116,25 +138,21 @@ void FG_FASTCALL fgChild_Destroy(fgChild* self)
     //fgChild_SetParent(self->root, 0);
   
   if(self->parent!=0)
-    LList_Remove(self,&self->parent->root); // Remove ourselves from our parent
+    LList_Remove(self,&self->parent->root,&self->parent->last); // Remove ourselves from our parent
 }
 
 void FG_FASTCALL fgChild_SetParent(fgChild* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent)
 {
-  fgChild* cur;
   assert(self!=0);
   if(self->parent!=0)
-    LList_Remove(self,&self->parent->root); // Remove ourselves from our parent
+    LList_Remove(self,&self->parent->root,&self->parent->last); // Remove ourselves from our parent
 
+  self->next=0;
+  self->prev=0;
   self->parent=parent;
 
   if(parent)
-  {
-    cur=parent->root;
-    while(cur!=0 && self->order<cur->order)
-      cur=cur->next;
-    LList_Insert(self,cur,&parent->root); // Add ourselves to our new parent
-  }
+    LList_Add(self,&parent->root,&parent->last);
 }
 
 char FG_FASTCALL CompareCRects(const CRect* l, const CRect* r)

@@ -1,7 +1,7 @@
 // Copyright ©2012 Black Sphere Studios
 // For conditions of distribution and use, see copyright notice in "feathergui.h"
 
-#include "fgNull.h"
+#include "fgWinAPI.h"
 #include "bss_defines.h"
 
 #if defined(BSS_DEBUG) && defined(BSS_CPU_x86_64)
@@ -14,25 +14,6 @@
 #pragma comment(lib, "../bin/feathergui.lib")
 #endif
 
-void (FG_FASTCALL *debugmsghook)(fgWindow* self, const FG_Msg* msg)=0;
-
-#define BUILDDEBUGMSG(TYPE) char FG_FASTCALL fgdebug_Message_##TYPE##(TYPE* self, const FG_Msg* msg) \
-{ \
-  if(debugmsghook!=0) (*debugmsghook)((fgWindow*)self,msg); \
-  return TYPE##_Message(self,msg); \
-}
-
-BUILDDEBUGMSG(fgButton)
-BUILDDEBUGMSG(fgMenu)
-BUILDDEBUGMSG(fgTopWindow)
-BUILDDEBUGMSG(fgWindow)
-
-fgStatic* NullRenderable()
-{
-  fgStatic* r = (fgStatic*)malloc(sizeof(fgStatic));
-  fgStatic_Init(r);
-  return r;
-}
 fgStatic* FG_FASTCALL fgLoadImage(const char* path)
 {
   return NullRenderable();

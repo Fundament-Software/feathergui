@@ -1,17 +1,17 @@
-// Copyright ©2012 Black Sphere Studios
+// Copyright ©2013 Black Sphere Studios
 // For conditions of distribution and use, see copyright notice in "feathergui.h"
 
 #include "fgContainer.h"
 
 void FG_FASTCALL RegionDestroy(fgChild* self)
 {
+  fgContainer* parent = (fgContainer*)self->parent;
   assert(self!=0);
   while(self->root) // Recursively set all children's parents to 0
     fgChild_SetParent(self->root, 0);
 
-  assert(self!=0);
-  if(self->parent!=0)
-    LList_Remove(self,(fgChild**)&((fgContainer*)self->parent)->regions); // Remove ourselves from our parent
+  if(parent!=0)
+    LList_Remove(self,(fgChild**)&parent->regions,(fgChild**)&parent->regionslast); // Remove ourselves from our parent
 }
 
 void FG_FASTCALL fgContainer_Init(fgContainer* self)
@@ -35,7 +35,7 @@ fgWindow* FG_FASTCALL fgContainer_AddRegion(fgContainer* self, fgElement* region
   r->element.destroy=fgWindow_Destroy;
   r->element.parent=&self->window.element;
 
-  LList_Add((fgChild*)r,(fgChild**)&self->regions);
+  LList_Add((fgChild*)r,(fgChild**)&self->regions,(fgChild**)&self->regionslast);
   memcpy(&r->element.element,region,sizeof(fgElement));
   return r;
 }

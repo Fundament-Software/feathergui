@@ -8,8 +8,8 @@
 
 // Version numbers
 #define BSS_VERSION_MAJOR 0
-#define BSS_VERSION_MINOR 3
-#define BSS_VERSION_REVISION 85
+#define BSS_VERSION_MINOR 4
+#define BSS_VERSION_REVISION 0
 
 //sometimes the std versions of these are a bit overboard, so this redefines the MS version, except it will no longer cause conflicts everywhere
 #define bssmax(a,b)            (((a) > (b)) ? (a) : (b))
@@ -28,6 +28,7 @@
 #ifndef __WFILE__
 #define __WFILE__ WIDEN(__FILE__) 
 #endif
+#define CONCAT(...) __VA_ARGS__
 
 // These are random number generator #defines. Note that RANDINTGEN is susceptible to modulo bias, so if you need a true distribution cast
 // RANDFLOATGEN to int. Actually if you need a true distribution just use the damn std random class in C++11 like you're supposed to.

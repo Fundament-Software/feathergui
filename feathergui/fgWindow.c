@@ -1,4 +1,4 @@
-// Copyright ©2012 Black Sphere Studios
+// Copyright ©2013 Black Sphere Studios
 // For conditions of distribution and use, see copyright notice in "feathergui.h"
 
 #include "fgWindow.h"
@@ -89,7 +89,7 @@ char FG_FASTCALL fgWindow_Message(fgWindow* self, const FG_Msg* msg)
     hold=(fgChild*)msg->other;
     fgStatic_NotifyParent((fgStatic*)hold);
     hold->parent=(fgChild*)self;
-    LList_Add(hold,(fgChild**)&self->rlist);
+    LList_Add(hold,(fgChild**)&self->rlist,(fgChild**)&self->rlast);
     fgStatic_SetWindow((fgStatic*)hold,self);
     break;
   case FG_REMOVESTATIC:
@@ -123,19 +123,19 @@ char FG_FASTCALL fgWindow_Message(fgWindow* self, const FG_Msg* msg)
       else if(!active && flip!=0) // Disable clipping, add to nonclipping array
         Add_VectWindow(&fgNonClipping,self); //DON'T sort this; if any parent window changed its zorder everything would explode
       break;
-    case FGWIN_HIDDEN:
-      hold=self->element.parent;
+    /*case FGWIN_HIDDEN:
       if(active && flip!=0) // Hide window
       {
+        hold=self->element.parent;
         fgWindow_VoidMessage(self,FG_SETPARENT,0);
-        self->element.parent=hold;
+        self->element.next=hold; // Store parent in next variable so as not to confuse SetParent or the destructor
       }
       else if(!active && flip!=0) // Show window
       {
-        self->element.parent=0; // Trick parent into thinking we were never on it
-        fgWindow_VoidMessage(self,FG_SETPARENT,hold);
+        assert(self->element.next!=0); // next will either have the stored secret parent in it, or be NULL. You can't "Show" something that has no parent!
+        fgWindow_VoidMessage(self,FG_SETPARENT,self->element.next);
       }
-      break;
+      break;*/
     }
     self->flags^=flip;
     break;

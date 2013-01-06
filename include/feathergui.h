@@ -1,5 +1,5 @@
 /* Feather - Lightweight GUI Abstraction Layer
-   Copyright ©2012 Black Sphere Studios
+   Copyright ©2013 Black Sphere Studios
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -53,8 +53,8 @@ MAKE_VEC(Coord,CVec);
 #define MAKE_RECT(_T,_T2,_N) typedef struct { \
   union { \
     struct { \
-      _T top; \
       _T left; \
+      _T top; \
       _T right; \
       _T bottom; \
     }; \
@@ -113,6 +113,7 @@ typedef struct _FG_CHILD {
   void (*free)(void* self); // pointer to deallocation function
   struct _FG_CHILD* parent;
   struct _FG_CHILD* root; // children list root
+  struct _FG_CHILD* last; // children list last
   struct _FG_CHILD* next;
   struct _FG_CHILD* prev;
   int order; // order relative to other windows or statics
@@ -181,14 +182,14 @@ FG_EXTERN void FG_FASTCALL fgChild_SetParent(fgChild* BSS_RESTRICT self, fgChild
 
 FG_EXTERN AbsVec FG_FASTCALL ResolveVec(const CVec* v, const AbsRect* last);
 FG_EXTERN void FG_FASTCALL ResolveRect(const fgChild* self, AbsRect* out);
-FG_EXTERN void FG_FASTCALL ResolveRectCache(AbsRect* r, const CRect* v, const AbsRect* last);
+FG_EXTERN void FG_FASTCALL ResolveRectCache(AbsRect* r, const fgElement* elem, const AbsRect* last);
 FG_EXTERN char FG_FASTCALL CompareCRects(const CRect* l, const CRect* r); // Returns 0 if both are the same or 1 otherwise
 FG_EXTERN char FG_FASTCALL CompChildOrder(const fgChild* l, const fgChild* r);
 FG_EXTERN char FG_FASTCALL MsgHitAbsRect(const FG_Msg* msg, const AbsRect* r);
 FG_EXTERN char FG_FASTCALL MsgHitCRect(const FG_Msg* msg, const fgChild* child);
-FG_EXTERN void FG_FASTCALL LList_Remove(fgChild* self, fgChild** root);
-FG_EXTERN void FG_FASTCALL LList_Add(fgChild* self, fgChild** root);
-FG_EXTERN void FG_FASTCALL LList_Insert(fgChild* self, fgChild* target, fgChild** root);
+FG_EXTERN void FG_FASTCALL LList_Remove(fgChild* self, fgChild** root, fgChild** last);
+FG_EXTERN void FG_FASTCALL LList_Add(fgChild* self, fgChild** root, fgChild** last);
+FG_EXTERN void FG_FASTCALL LList_Insert(fgChild* self, fgChild* target, fgChild** last);
 FG_EXTERN void FG_FASTCALL VirtualFreeChild(fgChild* self);
 
 #ifdef  __cplusplus

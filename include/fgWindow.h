@@ -1,4 +1,4 @@
-// Copyright ©2012 Black Sphere Studios
+// Copyright ©2013 Black Sphere Studios
 // For conditions of distribution and use, see copyright notice in "feathergui.h"
 
 #ifndef __FG_WINDOW_H__
@@ -18,14 +18,17 @@ enum FG_WINFLAGS
   FGWIN_TILEY=8
 };
 
+struct FG_MENU;
+
 // Defines the base GUI element, a window. This is not an actual top level window.
 typedef struct __WINDOW {
   fgChild element;
-  char (FG_FASTCALL *message)(struct __WINDOW* self, const FG_Msg* msg);
+  char (FG_FASTCALL *message)(void* self, const FG_Msg* msg);
   FG_UINT id;
   unsigned char flags; // 1 is x-axis centering, 2 is y-axis, 3 is both, 4 is clipping disabled, 8 is not visible
-  fgStatic* rlist;
-  struct __WINDOW* contextmenu;
+  fgStatic* rlist; // root node for statics
+  fgStatic* rlast; // last node for statics 
+  struct FG_MENU* contextmenu;
 } fgWindow;
 
 MAKE_VECTOR(fgWindow*,VectWindow);

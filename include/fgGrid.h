@@ -1,4 +1,4 @@
-// Copyright ©2012 Black Sphere Studios
+// Copyright ©2013 Black Sphere Studios
 // For conditions of distribution and use, see copyright notice in "feathergui.h"
 
 #ifndef __FG_GRID_H__
@@ -14,11 +14,10 @@ extern "C" {
 typedef struct {
   fgWindow window; // Note that the window flags consider 16 to be tile on x-axis, 32 to tile on y-axis, 48 both.
   AbsRect margins;
-  AbsRect dimensions;
 } fgGrid;
 
 FG_EXTERN void FG_FASTCALL fgGrid_Init(fgGrid* self);
-FG_EXTERN char FG_FASTCALL fgGrid_Message(fgWindow* self, const FG_Msg* msg);
+FG_EXTERN char FG_FASTCALL fgGrid_Message(fgGrid* self, const FG_Msg* msg);
 FG_EXTERN fgChild* FG_FASTCALL fgGrid_HitElement(fgGrid* self, FABS x, FABS y);
 
 #ifdef  __cplusplus

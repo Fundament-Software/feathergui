@@ -1,4 +1,4 @@
-// Copyright ©2012 Black Sphere Studios
+// Copyright ©2013 Black Sphere Studios
 // For conditions of distribution and use, see copyright notice in "feathergui.h"
 
 #include "fgWindow.h"
@@ -23,9 +23,11 @@ void FG_FASTCALL fgStatic_RemoveParent(fgStatic* self)
 {
   assert(self!=0);
   if(self->parent!=0 && (&self->parent->element)==self->element.parent)
-    LList_Remove(&self->element, (fgChild**)&self->parent->rlist); // Remove ourselves from our window parent 
+    LList_Remove(&self->element, (fgChild**)&self->parent->rlist, (fgChild**)&self->parent->rlast); // Remove ourselves from our window parent 
   else if(self->element.parent!=0) // Otherwise remove ourselves from our static parent, which has a different root
-    LList_Remove(&self->element,&self->element.parent->root);
+    LList_Remove(&self->element,&self->element.parent->root,&self->element.parent->last);
+  self->element.next=0;
+  self->element.prev=0;
 }
 void FG_FASTCALL fgStatic_NotifyParent(fgStatic* self)
 {

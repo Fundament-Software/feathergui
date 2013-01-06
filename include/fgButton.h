@@ -1,4 +1,4 @@
-// Copyright ©2012 Black Sphere Studios
+// Copyright ©2013 Black Sphere Studios
 // For conditions of distribution and use, see copyright notice in "feathergui.h"
 
 #ifndef __FG_BUTTON_H__
@@ -19,7 +19,7 @@ typedef struct _FG_BUTTON {
 
 FG_EXTERN fgButton* FG_FASTCALL fgButton_Create(fgStatic* item);
 FG_EXTERN void FG_FASTCALL fgButton_Init(fgButton* self);
-FG_EXTERN char FG_FASTCALL fgButton_Message(fgWindow* self, const FG_Msg* msg);
+FG_EXTERN char FG_FASTCALL fgButton_Message(fgButton* self, const FG_Msg* msg);
 
 #ifdef  __cplusplus
 }

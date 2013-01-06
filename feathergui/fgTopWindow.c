@@ -1,4 +1,4 @@
-// Copyright ©2012 Black Sphere Studios
+// Copyright ©2013 Black Sphere Studios
 // For conditions of distribution and use, see copyright notice in "feathergui.h"
 
 #include "fgTopWindow.h"
@@ -14,9 +14,8 @@ void FG_FASTCALL fgTopWindow_Init(fgTopWindow* self)
 void FG_FASTCALL fgTopWindow_Destroy(fgTopWindow* self)
 {  
   assert(self!=0);
-  fgChild_SetParent((fgChild*)&self->region,0); // If we don't do this our destructor will attempt to deallocate our object... on the stack
+  fgWindow_Destroy(&self->region); // If we don't do this our destructor will attempt to deallocate our object... on the stack
   fgWindow_Destroy((fgWindow*)self);
-  fgWindow_Destroy(&self->region);
 }
 
 char FG_FASTCALL fgTopWindow_Message(fgTopWindow* self, const FG_Msg* msg)

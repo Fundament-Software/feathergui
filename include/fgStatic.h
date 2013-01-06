@@ -1,4 +1,4 @@
-// Copyright ©2012 Black Sphere Studios
+// Copyright ©2013 Black Sphere Studios
 // For conditions of distribution and use, see copyright notice in "feathergui.h"
 
 #ifndef __FG_RENDERABLE_H__
@@ -31,12 +31,19 @@ enum FG_RENDERMSG
 
 enum FG_TEXTFLAGS
 {
-  FGTEXT_CHARWRAP, // Wraps lines that go past the edge of the container by character
-  FGTEXT_WORDWRAP, // Wraps lines that go past the edge of the container by word (the definition of a "word" is implementation specific)
-  FGTEXT_ELLIPSES, // Lines that go past the bounderies of the text object are cut off with an ellipses (...)
-  FGTEXT_RTL, // Forces right-to-left text rendering.
-  FGTEXT_RIGHTALIGN,
-  FGTEXT_CENTER, // Text horizontal centering behaves differently, because it centers each individual line.
+  FGTEXT_CHARWRAP=1, // Wraps lines that go past the edge of the container by character
+  FGTEXT_WORDWRAP=2, // Wraps lines that go past the edge of the container by word (the definition of a "word" is implementation specific)
+  FGTEXT_ELLIPSES=4, // Lines that go past the bounderies of the text object are cut off with an ellipses (...)
+  FGTEXT_RTL=8, // Forces right-to-left text rendering.
+  FGTEXT_RIGHTALIGN=16,
+  FGTEXT_CENTER=32, // Text horizontal centering behaves differently, because it centers each individual line.
+};
+
+enum FG_IMAGEFLAGS
+{
+  FGIMAGE_STRETCH=1, // Stretches the image instead of tiling it
+  FGIMAGE_TILEALIGNRIGHT=2, // When tiling an image the image's origin is on the right instead of the left.
+  FGIMAGE_TILEALIGNBOTTOM=4, // The image origin is on the bottom instead of the top.
 };
 
 struct __WINDOW;

@@ -1,4 +1,4 @@
-// Copyright ©2012 Black Sphere Studios
+// Copyright ©2013 Black Sphere Studios
 // For conditions of distribution and use, see copyright notice in "feathergui.h"
 
 #include "fgGrid.h"
@@ -9,7 +9,6 @@ void FG_FASTCALL fgGrid_Init(fgGrid* self)
   fgWindow_Init(&self->window,0);
   self->window.message=&fgGrid_Message;
   memset(&self->margins,0,sizeof(AbsRect));
-  memset(&self->dimensions,0,sizeof(AbsRect));
 }
 char FG_FASTCALL fgGrid_Message(fgGrid* self, const FG_Msg* msg)
 {

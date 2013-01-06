@@ -1,4 +1,4 @@
-// Copyright ©2012 Black Sphere Studios
+// Copyright ©2013 Black Sphere Studios
 // For conditions of distribution and use, see copyright notice in "feathergui.h"
 
 #ifndef __FG_CONTAINER_H__
@@ -14,6 +14,7 @@ extern "C" {
 typedef struct {
   fgWindow window;
   fgWindow* regions;
+  fgWindow* regionslast;
 } fgContainer;
 
 FG_EXTERN void FG_FASTCALL fgContainer_Init(fgContainer* self);

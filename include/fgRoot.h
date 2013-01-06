@@ -1,4 +1,4 @@
-// Copyright ©2012 Black Sphere Studios
+// Copyright ©2013 Black Sphere Studios
 // For conditions of distribution and use, see copyright notice in "feathergui.h"
 
 #ifndef __FG_ROOT_H__
@@ -21,7 +21,7 @@ typedef struct {
 
 FG_EXTERN fgRoot* FG_FASTCALL fgInitialize();
 FG_EXTERN void FG_FASTCALL fgTerminate(fgRoot* root);
-FG_EXTERN void FG_FASTCALL fgRoot_Inject(fgRoot* self, const FG_Msg* msg);
+FG_EXTERN char FG_FASTCALL fgRoot_Inject(fgRoot* self, const FG_Msg* msg); // Returns 0 if handled, 1 otherwise
 FG_EXTERN char FG_FASTCALL fgRoot_BehaviorDefault(fgWindow* self, const FG_Msg* msg);
 FG_EXTERN void FG_FASTCALL fgRoot_Render(fgRoot* self);
 FG_EXTERN void FG_FASTCALL fgRoot_RListRender(fgStatic* self, AbsRect* area);
