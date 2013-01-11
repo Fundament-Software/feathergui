@@ -65,6 +65,9 @@
     <ClInclude Include="..\include\fgTextbox.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="fgSkin.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="fgButton.c">

@@ -52,6 +52,7 @@ struct __WINDOW;
 typedef struct __RENDERABLE {
   fgChild element;
   void (FG_FASTCALL *message)(struct __RENDERABLE* self, unsigned char type, void* arg);
+  struct __RENDERABLE* (FG_FASTCALL *clone)(struct __RENDERABLE* self);
   struct __WINDOW* parent;
 } fgStatic;
 
