@@ -141,3 +141,67 @@ FG_EXTERN void FG_FASTCALL fgRoot_Render(fgRoot* self)
   (*self->winrender)((fgWindow*)self, &absarea);
 }
 
+FG_EXTERN void FG_FASTCALL fgRoot_Update(fgRoot* self, double delta)
+{
+  fgDeferAction* cur;
+  self->time+=delta;
+
+  while(cur=self->updateroot && (cur->time<=self->time))
+  {
+    (*cur->action)(cur->arg);
+    self->updateroot=cur->next;
+    free(cur);
+  }
+}
+FG_EXTERN fgDeferAction* FG_FASTCALL fgRoot_AllocAction(void (FG_FASTCALL *action)(void*), void* arg, double time)
+{
+  fgDeferAction* r = (fgDeferAction*)malloc(sizeof(fgDeferAction));
+  r->action=action;
+  r->arg=arg;
+  r->time=time;
+  r->next=0; // We do this so its never ambigious if an action is in the list already or not
+  r->prev=0;
+  return r;
+}
+FG_EXTERN void FG_FASTCALL fgRoot_DeallocAction(fgRoot* self, fgDeferAction* action)
+{
+  if(action->prev!=0 || action==self->updateroot) // If true you are in the list and must be removed
+    fgRoot_RemoveAction(self,action);
+  free(action);
+}
+
+FG_EXTERN void FG_FASTCALL fgRoot_AddAction(fgRoot* self, fgDeferAction* action)
+{
+  fgDeferAction* cur = self->updateroot;
+  fgDeferAction* prev = 0; // Sadly the elegant pointer to pointer method doesn't work for doubly linked lists.
+  assert(action!=0 && !action->prev && action!=self->updateroot);
+  while(cur != 0 && cur->time < action->time)
+  {
+     prev = cur;
+     cur = cur->next;
+  }
+  action->next = cur;
+  action->prev = prev;
+  if(prev) prev->next=action;
+  else self->updateroot=action; // Prev is only null if we're inserting before the root, which means we must reassign the root.
+  if(cur) cur->prev=action; // Cur is null if we are at the end of the list.
+}
+FG_EXTERN void FG_FASTCALL fgRoot_RemoveAction(fgRoot* self, fgDeferAction* action)
+{
+  assert(action!=0 && (action->prev!=0 || action==self->updateroot));
+	if(action->prev != 0) action->prev->next = action->next;
+  else self->updateroot = action->next;
+	if(action->next != 0) action->next->prev = action->prev;
+  action->next=0; // We do this so its never ambigious if an action is in the list already or not
+  action->prev=0;
+}
+FG_EXTERN void FG_FASTCALL fgRoot_ModifyAction(fgRoot* self, fgDeferAction* action)
+{
+  if((action->next!=0 && action->next->time<action->time) || (action->prev!=0 && action->prev->time>action->time))
+  {
+    fgRoot_RemoveAction(self,action);
+    fgRoot_AddAction(self,action);
+  }
+  else if(!action->prev && action!=self->updateroot) // If true you aren't in the list so we need to add you
+    fgRoot_AddAction(self,action);
+}

@@ -5,6 +5,7 @@
 #define __FG_MENU_H__
 
 #include "fgGrid.h"
+#include "fgRoot.h"
 
 #ifdef  __cplusplus
 extern "C" {
@@ -19,7 +20,7 @@ typedef struct FG_MENU {
   fgWindow overlay; // Sizeless overlay component that lets us render highlighters and selectors
   struct FG_MENUITEM* expanded; // Stores the current item that has an expanded submenu, if any exist.
   fgStatic* skin[4]; // index 0 is the background to the menu, 1 is the highlighter, 2 is the seperator, 3 is the submenu arrow
-  long long prevtime;
+  fgDeferAction* dropdown; // Keeps track of our dropdown action in fgRoot
 } fgMenu;
 
 struct FG_MENUITEM {
@@ -31,6 +32,8 @@ FG_EXTERN fgMenu* FG_FASTCALL fgMenu_Create();
 FG_EXTERN void FG_FASTCALL fgMenu_Init(fgMenu* self);
 FG_EXTERN void FG_FASTCALL fgMenu_Destroy(fgMenu* self);
 FG_EXTERN char FG_FASTCALL fgMenu_Message(fgMenu* self, const FG_Msg* msg);
+FG_EXTERN void FG_FASTCALL fgMenu_DoDropdown(fgMenu* self);
+FG_EXTERN void FG_FASTCALL fgMenu_Morph(fgMenu* self);
 
 #ifdef  __cplusplus
 }

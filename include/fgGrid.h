@@ -19,6 +19,7 @@ typedef struct {
 FG_EXTERN void FG_FASTCALL fgGrid_Init(fgGrid* self);
 FG_EXTERN char FG_FASTCALL fgGrid_Message(fgGrid* self, const FG_Msg* msg);
 FG_EXTERN fgChild* FG_FASTCALL fgGrid_HitElement(fgGrid* self, FABS x, FABS y);
+FG_EXTERN void FG_FASTCALL fgGrid_Reposition(fgGrid* self, fgChild* element);
 
 #ifdef  __cplusplus
 }

@@ -25,8 +25,16 @@ enum FG_RENDERMSG
   FG_RSETFLAGS,
   FG_RSETORDER,
   FG_RSETFONT,
+  FG_RMOVE,
   FG_RCLONE,
   FG_RCUSTOM
+};
+
+enum FG_STATICFLAGS
+{
+  FGSTATIC_CLIP=1, // Causes an empty static to clip its children. Setting this to true will automatically disable EXPANDX and EXPANDY.
+  FGSTATIC_EXPANDX=2, // Causes and empty static to always expand its X axis to contain its children. This is the default behavior.
+  FGSTATIC_EXPANDY=4, // Same for Y axis. Note that if you set FGSTATIC_CLIP, you can still set one axis to expand by re-enabling its flag.
 };
 
 enum FG_TEXTFLAGS
@@ -37,6 +45,7 @@ enum FG_TEXTFLAGS
   FGTEXT_RTL=8, // Forces right-to-left text rendering.
   FGTEXT_RIGHTALIGN=16,
   FGTEXT_CENTER=32, // Text horizontal centering behaves differently, because it centers each individual line.
+  FGTEXT_STRETCH=64, // Stretches the text to fill the area.
 };
 
 enum FG_IMAGEFLAGS
@@ -54,20 +63,24 @@ typedef struct __RENDERABLE {
   void (FG_FASTCALL *message)(struct __RENDERABLE* self, unsigned char type, void* arg);
   struct __RENDERABLE* (FG_FASTCALL *clone)(struct __RENDERABLE* self);
   struct __WINDOW* parent;
+  unsigned char flags; // Only used by fgStatic_MessageEmpty
 } fgStatic;
 
 FG_EXTERN void FG_FASTCALL fgStatic_Init(fgStatic* self);
 FG_EXTERN void FG_FASTCALL fgStatic_Destroy(fgStatic* self);
 FG_EXTERN void FG_FASTCALL fgStatic_Message(fgStatic* self, unsigned char type, void* arg);
+FG_EXTERN void FG_FASTCALL fgStatic_MessageEmpty(fgStatic* self, unsigned char type, void* arg);
 FG_EXTERN void FG_FASTCALL fgStatic_SetWindow(fgStatic* self, struct __WINDOW* window);
 FG_EXTERN void FG_FASTCALL fgStatic_RemoveParent(fgStatic* self);
 FG_EXTERN void FG_FASTCALL fgStatic_NotifyParent(fgStatic* self);
+FG_EXTERN void FG_FASTCALL fgStatic_Clone(fgStatic* self, fgStatic* from); // Clones information and all the children from "from" to "self"
 
 FG_EXTERN fgStatic* FG_FASTCALL fgLoadImage(const char* path);
 FG_EXTERN fgStatic* FG_FASTCALL fgLoadImageData(const void* data, size_t length);
 FG_EXTERN fgStatic* FG_FASTCALL fgLoadVector(const char* path);
 FG_EXTERN fgStatic* FG_FASTCALL fgLoadVectorData(const void* data, size_t length);
 FG_EXTERN fgStatic* FG_FASTCALL fgLoadText(const char* text, unsigned int flags);
+FG_EXTERN fgStatic* FG_FASTCALL fgEmptyStatic();
 FG_EXTERN void FG_FASTCALL SetSkinArray(fgStatic** pp, unsigned char size, unsigned char index);
 
 // An item represented by both text and an image is extremely common, so we define this helper struct to make things simpler

@@ -143,6 +143,22 @@ char FG_FASTCALL fgWindow_Message(fgWindow* self, const FG_Msg* msg)
     self->element.order=msg->otherint;
     fgChild_SetParent(&self->element,self->element.parent);
     break;
+  case FG_MOVE:
+    if(self->flags&(FGWIN_NOCLIP|FGWIN_HIDDEN)) // If we are not clipping or hidden, we NEVER propagate FG_MOVE messages.
+      break;
+    if(msg->other!=0) // If its external we only propagate if we are expanding an axis in response.
+    {
+      if(self->flags&(FGWIN_EXPANDX|FGWIN_EXPANDY)) // Should we expand?
+      {
+        if(self->flags&FGWIN_EXPANDX) fgChild_ExpandX(self,msg->other); // Expand X axis if needed
+        if(self->flags&FGWIN_EXPANDY) fgChild_ExpandY(self,msg->other); // Expand Y axis if needed
+        if(self->element.parent!=0) // Propagate if we have a parent to propagate to.
+          fgWindow_VoidMessage((fgWindow*)self->element.parent,FG_MOVE,self);
+      }
+    }
+    else if(self->element.parent!=0) // If it's internal and we got this far, we always propagate it if we have a parent.
+      fgWindow_VoidMessage((fgWindow*)self->element.parent,FG_MOVE,self);
+    break;
   }
   return 0;
 }

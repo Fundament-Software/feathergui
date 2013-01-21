@@ -14,6 +14,7 @@
 #pragma comment(lib, "../bin/feathergui.lib")
 #endif
 
+fgRoot* _fgroot=0; // fgRoot singleton variable
 void (FG_FASTCALL *debugmsghook)(fgWindow* self, const FG_Msg* msg)=0;
 
 #define BUILDDEBUGMSG(TYPE) char FG_FASTCALL fgdebug_Message_##TYPE##(TYPE* self, const FG_Msg* msg) \
@@ -31,6 +32,14 @@ fgStatic* NullRenderable()
 {
   fgStatic* r = (fgStatic*)malloc(sizeof(fgStatic));
   fgStatic_Init(r);
+  return r;
+}
+fgStatic* FG_FASTCALL fgEmptyStatic()
+{
+  fgStatic* r = (fgStatic*)malloc(sizeof(fgStatic));
+  fgStatic_Init(r);
+  r->message=&fgStatic_MessageEmpty;
+  r->flags=FGSTATIC_EXPANDX|FGSTATIC_EXPANDY;
   return r;
 }
 fgStatic* FG_FASTCALL fgLoadImage(const char* path)
@@ -86,11 +95,18 @@ void FG_FASTCALL fgRoot_destroy(fgRoot* self)
 fgRoot* FG_FASTCALL fgInitialize()
 {
   fgRoot* r = (fgRoot*)malloc(sizeof(fgRoot));
+  assert(!_fgroot);
   fgWindow_Init((fgWindow*)r,0);
   r->gui.element.destroy=&fgRoot_destroy;
   r->behaviorhook=&fgRoot_BehaviorDefault;
+  r->update=&fgRoot_Update;
   r->keymsghook=0;
+  r->time=0;
   r->winrender=&fgRoot_WinRender;
   fgWindow_Init(&r->mouse,0);
-  return r;
+  return _fgroot=r;
+}
+fgRoot* FG_FASTCALL fgSingleton()
+{
+  return _fgroot;
 }

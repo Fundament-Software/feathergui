@@ -230,6 +230,7 @@
     <ClCompile Include="fgContainer.c" />
     <ClCompile Include="fgGrid.c" />
     <ClCompile Include="fgMenu.c" />
+    <ClCompile Include="fgSkin.c" />
     <ClCompile Include="fgStatic.c" />
     <ClCompile Include="fgRoot.c" />
     <ClCompile Include="fgTopWindow.c" />

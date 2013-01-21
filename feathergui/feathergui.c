@@ -92,35 +92,27 @@ void FG_FASTCALL LList_Remove(fgChild* self, fgChild** root, fgChild** last)
 
 void FG_FASTCALL LList_Add(fgChild* self, fgChild** root, fgChild** last)
 {
-  fgChild* cur;
-  assert(self!=0 && root!=0); // While root cannot be zero, the pointer root is pointing to can be
-  cur=*root;
-  if(!cur)
+  fgChild* cur = *root;
+  fgChild* prev = 0; // Sadly the elegant pointer to pointer method doesn't work for doubly linked lists.
+  assert(self!=0 && root!=0);
+  if(!cur) // We do this check up here because we'd have to do it for the end append check below anyway so we might as well utilize it!
     (*last)=(*root)=self;
-  else if(self->order>=cur->order) {
-    self->next=cur;
-    cur->prev=self;
-    *root=self;
-  } else if(self->order<(*last)->order) { // shortcut for appending to the end of the list
-    self->prev=*last;
-    (*last)->next=self;
-    *last=self;
+  else if(self->order<(*last)->order) { // shortcut for appending to the end of the list
+    cur=0;
+    prev=*last;
   } else {
-    while(cur->next!=0 && self->order<cur->next->order)
-      cur=cur->next;
-    LList_Insert(self,cur,last); // Add ourselves to our new parent
+    while(cur != 0 && self->order < cur->order)
+    {
+       prev = cur;
+       cur = cur->next;
+    }
   }
-}
-
-// This function inserts AFTER the target.
-void FG_FASTCALL LList_Insert(fgChild* self, fgChild* target, fgChild** last)
-{
-  assert(self!=0 && target!=0);
-	self->next = target->next;
-	self->prev = target;
-	if (target->next != 0) target->next->prev = self;
-  else *last = self;
-	target->next = self;
+  self->next = cur;
+  self->prev = prev;
+  if(prev) prev->next=self;
+  else *root=self; // Prev is only null if we're inserting before the root, which means we must reassign the root.
+  if(cur) cur->prev=self; 
+  else *last=self; // Cur is null if we are at the end of the list, so update last
 }
 
 void FG_FASTCALL fgChild_Init(fgChild* self) 
@@ -155,11 +147,38 @@ void FG_FASTCALL fgChild_SetParent(fgChild* BSS_RESTRICT self, fgChild* BSS_REST
     LList_Add(self,&parent->root,&parent->last);
 }
 
+void FG_FASTCALL fgChild_ExpandX(fgChild* self, fgElement* elem)
+{
+  CRect* area=(CRect*)elem; // we can do this because CRect is on top of the fgElement struct and therefore fgElement "inherits" it.
+  CRect* selfarea=(CRect*)self;
+  FABS d = selfarea->right.abs-selfarea->left.abs;
+  if(area->right.rel==0.0 && area->right.abs>d) // Only expand on stuff that isn't relatively positioned for obvious reasons.
+    selfarea->right.abs=selfarea->left.abs+area->right.abs;
+}
+void FG_FASTCALL fgChild_ExpandY(fgChild* self, fgElement* elem)
+{
+  CRect* area=(CRect*)elem; 
+  CRect* selfarea=(CRect*)self;
+  FABS d = selfarea->bottom.abs-selfarea->top.abs;
+  if(area->bottom.rel==0.0 && area->bottom.abs>d)
+    selfarea->bottom.abs=selfarea->top.abs+area->bottom.abs;
+}
+
 char FG_FASTCALL CompareCRects(const CRect* l, const CRect* r)
 {
   assert(l!=0 && r!=0);
   if(l->left.abs!=r->left.abs) return 1; // Optimization to catch a whole ton of move situations where almost all abs coords change.
   return memcmp(l,r,sizeof(CRect))!=0;
+}
+void FG_FASTCALL MoveCRect(AbsVec* v, CRect* r)
+{
+  FABS dx,dy;
+  dx=r->right.abs-r->left.abs;
+  dy=r->bottom.abs-r->top.abs;
+  r->left.abs=v->x;
+  r->top.abs=v->y;
+  r->right.abs=v->x+dx;
+  r->right.abs=v->y+dy;
 }
 
 char FG_FASTCALL CompChildOrder(const fgChild* l, const fgChild* r)

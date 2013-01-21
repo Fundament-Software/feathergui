@@ -14,8 +14,10 @@ enum FG_WINFLAGS
 {
   FGWIN_NOCLIP=1,
   FGWIN_HIDDEN=2,
-  FGWIN_TILEX=4,
-  FGWIN_TILEY=8
+  FGWIN_EXPANDX=4,
+  FGWIN_EXPANDY=8,
+  FGGRID_TILEX=16,
+  FGGRID_TILEY=32
 };
 
 struct FG_MENU;
@@ -25,7 +27,7 @@ typedef struct __WINDOW {
   fgChild element;
   char (FG_FASTCALL *message)(void* self, const FG_Msg* msg);
   FG_UINT id;
-  unsigned char flags; // 1 is x-axis centering, 2 is y-axis, 3 is both, 4 is clipping disabled, 8 is not visible
+  unsigned char flags; // 1 is clipping disabled, 2 is not visible
   fgStatic* rlist; // root node for statics
   fgStatic* rlast; // last node for statics 
   struct FG_MENU* contextmenu;

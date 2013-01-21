@@ -10,7 +10,9 @@ void FG_FASTCALL fgStatic_Init(fgStatic* self)
   self->message=&fgStatic_Message; 
   self->element.destroy=&fgStatic_Destroy; 
   self->parent=0;
+  self->flags=0;
 }
+
 void FG_FASTCALL fgStatic_Destroy(fgStatic* self)
 {
   assert(self!=0);
@@ -35,7 +37,7 @@ void FG_FASTCALL fgStatic_NotifyParent(fgStatic* self)
   if(self->parent!=0 && (&self->parent->element)==self->element.parent) // Notify parent window of removal
     fgWindow_VoidMessage(self->parent,FG_REMOVESTATIC,self);
   else if(self->element.parent!=0) // Otherwise notify parent static of removal
-    fgStatic_Message((fgStatic*)self->element.parent,FG_RREMOVECHILD,self);
+    (*((fgStatic*)self->element.parent)->message)((fgStatic*)self->element.parent,FG_RREMOVECHILD,self);
   assert(self->element.parent==0);
 }
 void FG_FASTCALL fgStatic_Message(fgStatic* self, unsigned char type, void* arg)
@@ -68,6 +70,30 @@ void FG_FASTCALL fgStatic_Message(fgStatic* self, unsigned char type, void* arg)
     break;
   }
 }
+void FG_FASTCALL fgStatic_MessageEmpty(fgStatic* self, unsigned char type, void* arg)
+{
+  assert(self!=0);
+
+  fgStatic_Message(self,type,arg);
+
+  switch(type)
+  {
+  case FG_RADDCHILD:
+  case FG_RREMOVECHILD:
+  case FG_RMOVE:
+    if(self->flags&(FGWIN_EXPANDX|FGWIN_EXPANDY)) // Should we expand?
+    {
+      if(self->flags&FGSTATIC_EXPANDX) fgChild_ExpandX(self,arg);
+      if(self->flags&FGSTATIC_EXPANDY) fgChild_ExpandY(self,arg);
+      if(self->parent!=0 && (&self->parent->element)==self->element.parent) // If our parent is a window, pass it an FG_MOVE message
+        fgWindow_VoidMessage(self->parent,FG_MOVE,self);
+      else if(self->element.parent!=0) // Otherwise if our parent exists, its an fgStatic, so pass it an FG_RMOVE message.
+        (*((fgStatic*)self->element.parent)->message)((fgStatic*)self->element.parent,FG_RMOVE,self);
+    }
+    break;
+  }
+}
+
 void FG_FASTCALL fgStatic_SetWindow(fgStatic* self, struct __WINDOW* window)
 {
   fgChild* cur=self->element.root;
@@ -75,6 +101,21 @@ void FG_FASTCALL fgStatic_SetWindow(fgStatic* self, struct __WINDOW* window)
   while(cur)
   {
     fgStatic_SetWindow((fgStatic*)cur,window);
+    cur=cur->next;
+  }
+}
+
+void FG_FASTCALL fgStatic_Clone(fgStatic* self, fgStatic* from)
+{
+  fgChild* cur=from->element.root;
+  memcpy(self,from,sizeof(fgStatic));
+  self->element.root=0;
+  self->element.last=0;
+  self->element.parent=0;
+
+  while(cur)
+  {
+    (*self->message)(self,FG_RADDCHILD,(*((fgStatic*)cur)->clone)((fgStatic*)cur));
     cur=cur->next;
   }
 }

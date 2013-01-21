@@ -179,12 +179,15 @@ typedef struct __FG_MSG {
 FG_EXTERN void FG_FASTCALL fgChild_Init(fgChild* self);
 FG_EXTERN void FG_FASTCALL fgChild_Destroy(fgChild* self);
 FG_EXTERN void FG_FASTCALL fgChild_SetParent(fgChild* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent);
+FG_EXTERN void FG_FASTCALL fgChild_ExpandX(fgChild* self, fgElement* elem);
+FG_EXTERN void FG_FASTCALL fgChild_ExpandY(fgChild* self, fgElement* elem);
 
 FG_EXTERN AbsVec FG_FASTCALL ResolveVec(const CVec* v, const AbsRect* last);
 FG_EXTERN void FG_FASTCALL ResolveRect(const fgChild* self, AbsRect* out);
 FG_EXTERN void FG_FASTCALL ResolveRectCache(AbsRect* r, const fgElement* elem, const AbsRect* last);
 FG_EXTERN char FG_FASTCALL CompareCRects(const CRect* l, const CRect* r); // Returns 0 if both are the same or 1 otherwise
 FG_EXTERN char FG_FASTCALL CompChildOrder(const fgChild* l, const fgChild* r);
+FG_EXTERN void FG_FASTCALL MoveCRect(AbsVec* v, CRect* r);
 FG_EXTERN char FG_FASTCALL MsgHitAbsRect(const FG_Msg* msg, const AbsRect* r);
 FG_EXTERN char FG_FASTCALL MsgHitCRect(const FG_Msg* msg, const fgChild* child);
 FG_EXTERN void FG_FASTCALL LList_Remove(fgChild* self, fgChild** root, fgChild** last);
