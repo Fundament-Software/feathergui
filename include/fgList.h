@@ -20,8 +20,8 @@ typedef struct {
   fgStatic* skin[3]; // index 0 is the background to the list, 1 is the highlighter, 2 is the selector
 } fgList;
 
-FG_EXTERN fgList* FG_FASTCALL fgList_Create();
-FG_EXTERN void FG_FASTCALL fgList_Init(fgList* self);
+FG_EXTERN fgWindow* FG_FASTCALL fgList_Create(fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags);
+FG_EXTERN void FG_FASTCALL fgList_Init(fgList* self, fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags);
 FG_EXTERN char FG_FASTCALL fgList_Message(fgList* self, const FG_Msg* msg);
 
 #ifdef  __cplusplus

@@ -26,7 +26,7 @@ enum FG_RENDERMSG
   FG_RSETORDER,
   FG_RSETFONT,
   FG_RMOVE,
-  FG_RCLONE,
+  FG_RCLONE, // Initializes an empty fgStatic passed in as arg as a clone of this static.
   FG_RCUSTOM
 };
 
@@ -56,6 +56,7 @@ enum FG_IMAGEFLAGS
 };
 
 struct __WINDOW;
+typedef unsigned short fgFlag;
 
 // Representation of a static, which is implemented by the GUI implementation
 typedef struct __RENDERABLE {
@@ -63,7 +64,8 @@ typedef struct __RENDERABLE {
   void (FG_FASTCALL *message)(struct __RENDERABLE* self, unsigned char type, void* arg);
   struct __RENDERABLE* (FG_FASTCALL *clone)(struct __RENDERABLE* self);
   struct __WINDOW* parent;
-  unsigned char flags; // Only used by fgStatic_MessageEmpty
+  fgFlag flags; // Only used by fgStatic_MessageEmpty
+  void* userdata;
 } fgStatic;
 
 FG_EXTERN void FG_FASTCALL fgStatic_Init(fgStatic* self);

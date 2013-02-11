@@ -2,6 +2,7 @@
 // For conditions of distribution and use, see copyright notice in "feathergui.h"
 
 #include "fgSkin.h"
+#include "fgRoot.h"
 
 void FG_FASTCALL fgSkinSet_Init(fgSkinSet* self)
 {
@@ -67,7 +68,7 @@ void FG_FASTCALL fgSkin_Apply(fgSkin* self, fgWindow* target)
   {
     msg.other=(*cur->clone)(cur);
     msg.otheraux=cur->element.order;
-    (*target->message)(target,&msg);
+    fgRoot_CallBehavior(target,&msg);
     cur=(fgStatic*)cur->element.next;
   }
 }

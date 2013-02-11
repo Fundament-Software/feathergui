@@ -140,6 +140,7 @@ enum FG_MSGTYPE
   FG_MOVE, // Passed when any change is made to an element
   FG_SETPARENT,
   FG_SETFLAG, // Send in the flag in the first int arg, then set it to on or off (1 or 0) in the second argument
+  FG_SETFLAGS, // Sets all the flags to the first int arg.
   FG_SETORDER, // Sets the order of a window
   FG_SETCAPTION, 
   FG_SETALPHA, // Used so an entire widget can be made to fade in or out.
@@ -152,7 +153,17 @@ enum FG_MSGTYPE
   FG_REMOVEITEM,
   FG_SHOW, // Send an otherint equal to 0 to hide, otherwise its made visible
   FG_CLICKED, // Used for several controls to signify the user making a valid click (fgButton, fgCombobox, etc.)
+  FG_DESTROY, // Represents a request for the window to be destroyed. This request can be ignored, so it should not be used as a destructor.
   FG_CUSTOMEVENT
+};
+
+enum FG_MOUSEBUTTON // Used in FG_Msg.button and FG_Msg.allbtn
+{
+  FG_MOUSELBUTTON=1,
+  FG_MOUSERBUTTON=2,
+  FG_MOUSEMBUTTON=4,
+  FG_MOUSEXBUTTON1=8,
+  FG_MOUSEXBUTTON2=16,
 };
 
 // General message structure which contains the message type and then various kinds of information depending on the type.
@@ -164,8 +175,8 @@ typedef struct __FG_MSG {
     struct { short scrolldelta; }; // Mouse scroll
     struct {  // Keys
         unsigned char keycode; //only used by KEYDOWN/KEYUP, represents an actual keycode, not a character
-        char sigkeys;
         char keydown;
+        char sigkeys;
         int keychar; //Only used by KEYCHAR, represents a utf32 character
     };
     struct { float joyvalue; short joyaxis; }; // JOYAXIS
@@ -188,6 +199,7 @@ FG_EXTERN void FG_FASTCALL ResolveRectCache(AbsRect* r, const fgElement* elem, c
 FG_EXTERN char FG_FASTCALL CompareCRects(const CRect* l, const CRect* r); // Returns 0 if both are the same or 1 otherwise
 FG_EXTERN char FG_FASTCALL CompChildOrder(const fgChild* l, const fgChild* r);
 FG_EXTERN void FG_FASTCALL MoveCRect(AbsVec* v, CRect* r);
+FG_EXTERN char FG_FASTCALL HitAbsRect(const AbsRect* r, FABS x, FABS y);
 FG_EXTERN char FG_FASTCALL MsgHitAbsRect(const FG_Msg* msg, const AbsRect* r);
 FG_EXTERN char FG_FASTCALL MsgHitCRect(const FG_Msg* msg, const fgChild* child);
 FG_EXTERN void FG_FASTCALL LList_Remove(fgChild* self, fgChild** root, fgChild** last);

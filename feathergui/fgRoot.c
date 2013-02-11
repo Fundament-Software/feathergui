@@ -6,8 +6,27 @@
 
 VectWindow fgNonClipHit = {0};
 
+void FG_FASTCALL fgRoot_Init(fgRoot* self)
+{
+  fgWindow_Init((fgWindow*)self,0,0,0,0);
+  self->gui.element.destroy=&fgRoot_Destroy;
+  self->behaviorhook=&fgRoot_BehaviorDefault;
+  self->update=&fgRoot_Update;
+  self->updateroot=0;
+  self->keymsghook=0;
+  self->time=0;
+  self->winrender=&fgRoot_WinRender;
+  fgWindow_Init(&self->mouse,0,0,0,0);
+}
+
+void FG_FASTCALL fgRoot_Destroy(fgRoot* self)
+{
+  (*self->mouse.element.destroy)(&self->mouse);
+  fgWindow_Destroy((fgWindow*)self);
+}
+
 // Recursive event injection function
-char fgRoot_RInject(fgWindow* self, const FG_Msg* msg, AbsRect* area)
+char FG_FASTCALL fgRoot_RInject(fgRoot* root, fgWindow* self, const FG_Msg* msg, AbsRect* area)
 {
   AbsRect curarea;
   fgChild* cur = self->element.root;
@@ -19,17 +38,17 @@ char fgRoot_RInject(fgWindow* self, const FG_Msg* msg, AbsRect* area)
   while(cur) // Try to inject to any children we have
   {
     //if((((fgWindow*)cur)->flags&FGWIN_HIDDEN)==0)
-      if(!fgRoot_RInject((fgWindow*)cur,msg,&curarea)) // If the message is NOT rejected, return 0 immediately.
+      if(!fgRoot_RInject(root,(fgWindow*)cur,msg,&curarea)) // If the message is NOT rejected, return 0 immediately.
         return 0;
     cur=cur->next; // Otherwise the child rejected the message.
   } // If we get this far either we have no children, the event missed them all, or they all rejected the event.
 
   while(fgNonClipHit.l>0 && CompChildOrder((fgChild*)fgNonClipHit.p[0],(fgChild*)self)>0)
   { // If there's a nonclipping element that has an order larger than ours, try that first
-    if(!(*fgNonClipHit.p[0]->message)(fgNonClipHit.p[0],msg)) return 0; // If its accepted, we return that
+    if(!(*root->behaviorhook)(fgNonClipHit.p[0],msg)) return 0; // If its accepted, we return that
     Remove_VectWindow(&fgNonClipHit,0); // Otherwise, we remove the element from fgNonClipHit and repeat
   }
-  return (*((fgWindow*)self)->message)((fgWindow*)self,msg);
+  return (*root->behaviorhook)((fgWindow*)self,msg);
 }
 int fgwincomp(const void* l,const void* r)
 {
@@ -52,7 +71,7 @@ char FG_FASTCALL fgRoot_Inject(fgRoot* self, const FG_Msg* msg)
     if(!(*self->keymsghook)(msg))
       return 0;
     if(fgFocusedWindow)
-      return (*fgFocusedWindow->message)(fgFocusedWindow,msg);
+      return (*self->behaviorhook)(fgFocusedWindow,msg);
   case FG_MOUSEDOWN:
   case FG_MOUSEUP:
   case FG_MOUSEMOVE:
@@ -61,7 +80,7 @@ char FG_FASTCALL fgRoot_Inject(fgRoot* self, const FG_Msg* msg)
     mousearea->top.abs=mousearea->bottom.abs=(FABS)msg->y;
 
     if(fgFocusedWindow)
-      if(!(*fgFocusedWindow->message)(fgFocusedWindow,msg))
+      if(!(*self->behaviorhook)(fgFocusedWindow,msg))
         return 1;
 
     for(i=0; i < fgNonClipping.l; ++i) // Make a list of all nonclipping windows this event intersects
@@ -70,11 +89,11 @@ char FG_FASTCALL fgRoot_Inject(fgRoot* self, const FG_Msg* msg)
     if(fgNonClipHit.l>0) // Sort them in top-down order
       qsort(fgNonClipHit.p,fgNonClipHit.l,sizeof(fgWindow*),&fgwincomp); 
 
-    if(!fgRoot_RInject((fgWindow*)self,msg,&absarea))
+    if(!fgRoot_RInject(self,(fgWindow*)self,msg,&absarea))
       break; // it's important to break, not return, because we need to reset nonclip
 
     for(i=0; i < fgNonClipHit.l; ++i) // loop through remaining nonclipping windows and try to get one to accept the event
-      if(!(*fgNonClipHit.p[i]->message)(fgNonClipHit.p[i],msg))
+      if(!(*self->behaviorhook)(fgNonClipHit.p[i],msg))
         break;
     
     if(msg->type==FG_MOUSEMOVE && fgLastHover!=0) // If we STILL haven't accepted a mousemove event, send a MOUSEOFF message if lasthover exists
@@ -93,6 +112,10 @@ char FG_FASTCALL fgRoot_BehaviorDefault(fgWindow* self, const FG_Msg* msg)
 {
   assert(self!=0);
   return (*self->message)(self,msg);
+}
+FG_EXTERN char FG_FASTCALL fgRoot_CallBehavior(fgWindow* self, const FG_Msg* msg)
+{
+  return (*fgSingleton()->behaviorhook)(self,msg);
 }
 
 void FG_FASTCALL fgTerminate(fgRoot* root)
@@ -146,14 +169,14 @@ FG_EXTERN void FG_FASTCALL fgRoot_Update(fgRoot* self, double delta)
   fgDeferAction* cur;
   self->time+=delta;
 
-  while(cur=self->updateroot && (cur->time<=self->time))
+  while((cur=self->updateroot) && (cur->time<=self->time))
   {
-    (*cur->action)(cur->arg);
     self->updateroot=cur->next;
-    free(cur);
+    if((*cur->action)(cur->arg)) // If this returns true, we deallocate the node
+      free(cur);
   }
 }
-FG_EXTERN fgDeferAction* FG_FASTCALL fgRoot_AllocAction(void (FG_FASTCALL *action)(void*), void* arg, double time)
+FG_EXTERN fgDeferAction* FG_FASTCALL fgRoot_AllocAction(char (FG_FASTCALL *action)(void*), void* arg, double time)
 {
   fgDeferAction* r = (fgDeferAction*)malloc(sizeof(fgDeferAction));
   r->action=action;

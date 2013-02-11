@@ -59,7 +59,7 @@ char BSS_FASTCALL fcompare(float af, float bf, __int32 maxDiff) // maxDiff defau
 }
 char BSS_FASTCALL dcompare(double af, double bf, __int64 maxDiff)
 { 
-  __int32 ai,bi,test,diff,v1,v2;
+  __int64 ai,bi,test,diff,v1,v2;
   assert(af!=0.0 && bf!=0.0); // Use fsmall for this
   ai = *((__int64*)&af);
   bi = *((__int64*)&bf);
@@ -87,8 +87,6 @@ RETPAIR test_feathergui()
   CVec vec;
   AbsVec res;
   FG_Msg msg;
-
-  void (FG_FASTCALL *tmp)(void* self);
 
   TEST(fbnext(0)==1); // Basic function tests
   TEST(fbnext(1)==2);
@@ -203,10 +201,10 @@ RETPAIR test_feathergui()
   memset(&elem,0,sizeof(fgElement));
   memset(&last,0,sizeof(AbsRect));
   last.right=last.bottom=1.0f;
-  elem.area.top.abs=0.2;
-  elem.area.left.abs=0.3;
-  elem.area.right.abs=0.4;
-  elem.area.bottom.abs=0.5;
+  elem.area.top.abs=0.2f;
+  elem.area.left.abs=0.3f;
+  elem.area.right.abs=0.4f;
+  elem.area.bottom.abs=0.5f;
   ResolveRectCache(&out, &elem, &last);
   TEST(out.top==0.2f && // Surprisingly, this works on x87 but may break in single-precision mode. Replace with fcompare if that happens.
         out.left==0.3f &&
@@ -293,8 +291,8 @@ RETPAIR test_feathergui()
   msg.y=2;
   TEST(MsgHitAbsRect(&msg,&last)!=0); // Like everything else, feather uses inclusive-exclusive coordinates.
   
-  msg.x=1.5;
-  msg.y=2.5;
+  msg.x=1;
+  msg.y=3;
   TEST(MsgHitAbsRect(&msg,&last)!=0); 
 
   msg.x=2;
@@ -353,9 +351,15 @@ RETPAIR test_feathergui()
 
   memset(&crect,0,sizeof(CRect));
   memset(&cother,0,sizeof(CRect));
+  TEST(CompareCRects(&crect, &cother)==0);
   crect.left.abs=1;
-  //TEST(CompareCRects(&crect, &cother)==0);
-  //TEST(CompareCRects(&crect, &cother)!=0);
+  TEST(CompareCRects(&crect, &cother)!=0);
+  crect.left.abs=0;
+  crect.right.rel=1;
+  TEST(CompareCRects(&crect, &cother)!=0);
+  cother.left.abs=0;
+  cother.right.rel=1;
+  TEST(CompareCRects(&crect, &cother)==0);
 
   //CompChildOrder();
   ENDTEST;
@@ -379,21 +383,38 @@ RETPAIR test_TopWindow()
   ENDTEST;
 }
 
+char test_root_STAGE=0;
+char FG_FASTCALL donothing(void* a) { test_root_STAGE=2; return 1; } // Returning one auto deallocates the node
+char FG_FASTCALL dontfree(void* a) { test_root_STAGE=1; return 0; } // Returning zero means the node won't be automatically deallocated
+
 RETPAIR test_Root()
 {
   BEGINTEST;
   fgTopWindow* top;
+  fgDeferAction* action = fgRoot_AllocAction(&donothing,0,5);
+  fgDeferAction* action2 = fgRoot_AllocAction(&dontfree,0,2);
   gui = fgInitialize();
-  top = fgTopWindow_Create(gui);
+  top = (fgTopWindow*)fgTopWindow_Create("test",0,1,0);
 
-  fgWindow_VoidMessage(top,FG_ADDCHILD,fgButton_Create(fgLoadImage("fake")));
-  fgWindow_VoidMessage(top->region.element.root,FG_ADDCHILD,fgMenu_Create());
-  fgWindow_VoidMessage(top,FG_ADDCHILD,top->region.element.root->root);
-  fgWindow_VoidMessage(top,FG_ADDCHILD,fgButton_Create(fgLoadText("fake",0)));
-  fgWindow_VoidMessage(top,FG_ADDCHILD,fgMenu_Create());
-  fgWindow_VoidMessage(top,FG_ADDSTATIC,fgLoadImage("fake"));
+  fgRoot_AddAction(gui,action);
+  fgRoot_AddAction(gui,action2);
+  (*gui->update)(gui,1);
+  TEST(test_root_STAGE==0);
+  (*gui->update)(gui,1);
+  TEST(test_root_STAGE==1);
+  fgRoot_DeallocAction(gui,action2);
+  (*gui->update)(gui,1);
+  TEST(test_root_STAGE==1);
+  (*gui->update)(gui,10);
+  TEST(test_root_STAGE==2);
+  fgWindow_VoidMessage((fgWindow*)top,FG_ADDCHILD,fgButton_Create(fgLoadImage("fake"),0,0,2,0));
+  fgWindow_VoidMessage((fgWindow*)top->region.element.root,FG_ADDCHILD,fgMenu_Create(0,0,3,0));
+  fgWindow_VoidMessage((fgWindow*)top,FG_ADDCHILD,top->region.element.root->root);
+  fgWindow_VoidMessage((fgWindow*)top,FG_ADDCHILD,fgButton_Create(fgLoadText("fake",0),0,0,4,0));
+  fgWindow_VoidMessage((fgWindow*)top,FG_ADDCHILD,fgMenu_Create(0,0,5,0));
+  fgWindow_VoidMessage((fgWindow*)top,FG_ADDSTATIC,fgLoadImage("fake"));
   fgStatic_Message(top->region.rlist,FG_RADDCHILD,fgLoadText("fake",0));
-  fgWindow_VoidMessage(top,FG_ADDSTATIC,top->region.rlist->element.root);
+  fgWindow_VoidMessage((fgWindow*)top,FG_ADDSTATIC,top->region.rlist->element.root);
   fgRoot_Render(gui);
   ENDTEST;
 }
@@ -428,6 +449,55 @@ RETPAIR test_TERMINATE()
   fgTerminate(gui);
   ENDTEST;
 }
+//
+//void mystery(int* a, int* b)
+//{
+//	if((*a%2)==0)
+//		*b = *a/2;
+//	else
+//		*b = 3*(*a)+1;
+//}
+//
+//int main(int argc, char** argv)
+//{
+//	int n = 6;
+//	int m = 0;
+//	const char* str = ".!sBen..i.u.....n";
+//	
+//	while(n>1)
+//	{
+//		mystery(&n,&m);
+//		printf("%c",str[m]);
+//    //printf("%d\n",m);
+//		n=m;
+//	}
+//
+//  getc(stdin);
+//	return 0;	
+//}
+//
+//void mystery(int* a, int* b, int* c, int* d)
+//{
+//	*c = *a;
+//	*c = *c * *a + *c;
+//	*d = *b * 2 + 1;
+//}
+//
+//int main()
+//{
+//	int x = 5;
+//	int y = 2;
+//	int z = 0;
+//	int w = 0;
+//
+//	mystery(&x,&y,&z,&w);
+//	mystery(&z,&w,&x,&y);
+//	mystery(&w,&z,&y,&x);
+//	printf("%i,%i",z,w);
+//  getc(stdin);
+//	return 0;
+//}
+
 
 int main(int argc, char** argv)
 {

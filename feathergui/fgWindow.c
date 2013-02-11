@@ -2,18 +2,22 @@
 // For conditions of distribution and use, see copyright notice in "feathergui.h"
 
 #include "fgWindow.h"
+#include "fgRoot.h"
 
 fgWindow* fgFocusedWindow = 0;
 fgWindow* fgLastHover = 0;
 VectWindow fgNonClipping = {0};
 
-void FG_FASTCALL fgWindow_Init(fgWindow* BSS_RESTRICT self, fgWindow* BSS_RESTRICT parent)
+void FG_FASTCALL fgWindow_Init(fgWindow* BSS_RESTRICT self, fgWindow* BSS_RESTRICT parent, const fgElement* element, FG_UINT id, fgFlag flags)
 { 
   assert(self!=0);
   memset(self,0,sizeof(fgWindow)); 
   self->element.destroy=&fgWindow_Destroy; 
   self->element.free=&free;
   self->message=&fgWindow_Message;
+  self->id=id;
+  self->flags=flags;
+  if(element) self->element.element=*element;
   if(parent) fgWindow_VoidMessage(parent,FG_ADDCHILD,self);
 }
 void FG_FASTCALL fgWindow_Destroy(fgWindow* self)
@@ -32,11 +36,9 @@ char FG_FASTCALL fgWindow_Message(fgWindow* self, const FG_Msg* msg)
   //FG_Msg aux;
   FG_UINT i;
   char flip,flag,active;
-  CRect* cr;
   fgChild* hold;
   assert(self!=0);
   assert(msg!=0);
-  assert(msg->type<FG_CUSTOMEVENT);
 
   switch(msg->type)
   {
@@ -53,7 +55,7 @@ char FG_FASTCALL fgWindow_Message(fgWindow* self, const FG_Msg* msg)
     if(fgFocusedWindow != self)
       fgWindow_BasicMessage(self,FG_GOTFOCUS);
     if(msg->button == 2 && self->contextmenu!=0)
-      fgWindow_BasicMessage(self->contextmenu,FG_GOTFOCUS);
+      fgWindow_BasicMessage((fgWindow*)self->contextmenu,FG_GOTFOCUS);
     break;
   case FG_GOTFOCUS:
     if(fgFocusedWindow) // We do this here so you can disable getting focus by blocking this message without messing things up
@@ -97,6 +99,9 @@ char FG_FASTCALL fgWindow_Message(fgWindow* self, const FG_Msg* msg)
     fgStatic_RemoveParent((fgStatic*)msg->other);
     ((fgStatic*)msg->other)->element.parent=0;
     fgStatic_SetWindow((fgStatic*)msg->other,0);
+    break;
+  case FG_SETFLAGS:
+    self->flags=(fgFlag)msg->otherint;
     break;
   case FG_SHOW: // If 0 is sent in, hide, otherwise show. Our internal flag is 1 if hidden, 0 if shown.
   case FG_SETFLAG: // If 0 is sent in, disable the flag, otherwise enable. Our internal flag is 1 if clipping disabled, 0 otherwise.
@@ -150,8 +155,8 @@ char FG_FASTCALL fgWindow_Message(fgWindow* self, const FG_Msg* msg)
     {
       if(self->flags&(FGWIN_EXPANDX|FGWIN_EXPANDY)) // Should we expand?
       {
-        if(self->flags&FGWIN_EXPANDX) fgChild_ExpandX(self,msg->other); // Expand X axis if needed
-        if(self->flags&FGWIN_EXPANDY) fgChild_ExpandY(self,msg->other); // Expand Y axis if needed
+        if(self->flags&FGWIN_EXPANDX) fgChild_ExpandX((fgChild*)self,msg->other); // Expand X axis if needed
+        if(self->flags&FGWIN_EXPANDY) fgChild_ExpandY((fgChild*)self,msg->other); // Expand Y axis if needed
         if(self->element.parent!=0) // Propagate if we have a parent to propagate to.
           fgWindow_VoidMessage((fgWindow*)self->element.parent,FG_MOVE,self);
       }
@@ -159,11 +164,14 @@ char FG_FASTCALL fgWindow_Message(fgWindow* self, const FG_Msg* msg)
     else if(self->element.parent!=0) // If it's internal and we got this far, we always propagate it if we have a parent.
       fgWindow_VoidMessage((fgWindow*)self->element.parent,FG_MOVE,self);
     break;
+  case FG_DESTROY:
+    VirtualFreeChild((fgChild*)self);
+    break;
   }
   return 0;
 }
 
-void FG_FASTCALL fgWindow_SetElement(fgWindow* self, fgElement* element)
+void FG_FASTCALL fgWindow_SetElement(fgWindow* self, const fgElement* element)
 {
   char moved;
   fgElement* e = &self->element.element;
@@ -174,7 +182,7 @@ void FG_FASTCALL fgWindow_SetElement(fgWindow* self, fgElement* element)
     fgWindow_BasicMessage(self,FG_MOVE);
   }
 }
-void FG_FASTCALL fgWindow_SetArea(fgWindow* self, CRect* area)
+void FG_FASTCALL fgWindow_SetArea(fgWindow* self, const CRect* area)
 {
   char moved;
   CRect* l = &self->element.element.area;
@@ -186,30 +194,30 @@ void FG_FASTCALL fgWindow_SetArea(fgWindow* self, CRect* area)
   }
 }
 
-void FG_FASTCALL fgWindow_BasicMessage(fgWindow* self, unsigned char type)
+char FG_FASTCALL fgWindow_BasicMessage(fgWindow* self, unsigned char type)
 {
   FG_Msg aux = {0};
   aux.type=type;
   assert(self!=0);
-  (*self->message)(self,&aux);
+  return (*fgSingleton()->behaviorhook)(self,&aux);
 }
 
-void FG_FASTCALL fgWindow_VoidMessage(fgWindow* self, unsigned char type, void* data)
+char FG_FASTCALL fgWindow_VoidMessage(fgWindow* self, unsigned char type, void* data)
 {
   FG_Msg aux = {0};
   aux.type=type;
   aux.other=data;
   assert(self!=0);
-  (*self->message)(self,&aux);
+  return (*fgSingleton()->behaviorhook)(self,&aux);
 }
 
-void FG_FASTCALL fgWindow_IntMessage(fgWindow* self, unsigned char type, int data)
+char FG_FASTCALL fgWindow_IntMessage(fgWindow* self, unsigned char type, int data)
 {
   FG_Msg aux = {0};
   aux.type=type;
   aux.otherint=data;
   assert(self!=0);
-  (*self->message)(self,&aux);
+  return (*fgSingleton()->behaviorhook)(self,&aux);
 }
 
 void FG_FASTCALL DoSkinCheck(fgWindow* self, fgStatic** skins, const FG_Msg* msg)

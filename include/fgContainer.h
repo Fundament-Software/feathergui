@@ -17,7 +17,7 @@ typedef struct {
   fgWindow* regionslast;
 } fgContainer;
 
-FG_EXTERN void FG_FASTCALL fgContainer_Init(fgContainer* self);
+FG_EXTERN void FG_FASTCALL fgContainer_Init(fgContainer* self, fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags);
 FG_EXTERN void FG_FASTCALL fgContainer_Destroy(fgContainer* self);
 FG_EXTERN fgWindow* FG_FASTCALL fgContainer_AddRegion(fgContainer* self, fgElement* region);
 FG_EXTERN void FG_FASTCALL fgContainer_RemoveRegion(fgContainer* self, fgWindow* region);

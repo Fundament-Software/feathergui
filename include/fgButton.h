@@ -17,8 +17,8 @@ typedef struct _FG_BUTTON {
   fgStatic* skin[4]; // index 0 is the item, 1 is the skin, 2 is hover, 3 is active
 } fgButton;
 
-FG_EXTERN fgButton* FG_FASTCALL fgButton_Create(fgStatic* item);
-FG_EXTERN void FG_FASTCALL fgButton_Init(fgButton* self);
+FG_EXTERN fgWindow* FG_FASTCALL fgButton_Create(fgStatic* item, fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags);
+FG_EXTERN void FG_FASTCALL fgButton_Init(fgButton* self, fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags);
 FG_EXTERN char FG_FASTCALL fgButton_Message(fgButton* self, const FG_Msg* msg);
 
 #ifdef  __cplusplus

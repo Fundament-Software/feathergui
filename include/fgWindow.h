@@ -17,7 +17,12 @@ enum FG_WINFLAGS
   FGWIN_EXPANDX=4,
   FGWIN_EXPANDY=8,
   FGGRID_TILEX=16,
-  FGGRID_TILEY=32
+  FGGRID_TILEY=32,
+  FGTOPWINDOW_MINIMIZE=16,
+  FGTOPWINDOW_RESTORE=32,
+  FGTOPWINDOW_RESIZABLE=64,
+  FGTOPWINDOW_NOTITLEBAR=128,
+  FGTOPWINDOW_NOBORDER=256,
 };
 
 struct FG_MENU;
@@ -27,10 +32,11 @@ typedef struct __WINDOW {
   fgChild element;
   char (FG_FASTCALL *message)(void* self, const FG_Msg* msg);
   FG_UINT id;
-  unsigned char flags; // 1 is clipping disabled, 2 is not visible
+  fgFlag flags; // 1 is clipping disabled, 2 is not visible
   fgStatic* rlist; // root node for statics
   fgStatic* rlast; // last node for statics 
   struct FG_MENU* contextmenu;
+  void* userdata;
 } fgWindow;
 
 MAKE_VECTOR(fgWindow*,VectWindow);
@@ -39,14 +45,14 @@ FG_EXTERN fgWindow* fgFocusedWindow;
 FG_EXTERN fgWindow* fgLastHover; // Last window the mouse moved over, used to generate MOUSEON and MOUSEOFF events
 FG_EXTERN VectWindow fgNonClipping;
 
-FG_EXTERN void FG_FASTCALL fgWindow_Init(fgWindow* BSS_RESTRICT self, fgWindow* BSS_RESTRICT parent);
+FG_EXTERN void FG_FASTCALL fgWindow_Init(fgWindow* BSS_RESTRICT self, fgWindow* BSS_RESTRICT parent, const fgElement* element, FG_UINT id, fgFlag flags);
 FG_EXTERN void FG_FASTCALL fgWindow_Destroy(fgWindow* self);
 FG_EXTERN char FG_FASTCALL fgWindow_Message(fgWindow* self, const FG_Msg* msg);
-FG_EXTERN void FG_FASTCALL fgWindow_SetElement(fgWindow* self, fgElement* element);
-FG_EXTERN void FG_FASTCALL fgWindow_SetArea(fgWindow* self, CRect* area);
-FG_EXTERN void FG_FASTCALL fgWindow_BasicMessage(fgWindow* self, unsigned char type); // Shortcut for sending type messages with no data
-FG_EXTERN void FG_FASTCALL fgWindow_VoidMessage(fgWindow* self, unsigned char type, void* data); // Shortcut for sending void* messages
-FG_EXTERN void FG_FASTCALL fgWindow_IntMessage(fgWindow* self, unsigned char type, int data); // Shortcut for sending int messages
+FG_EXTERN void FG_FASTCALL fgWindow_SetElement(fgWindow* self, const fgElement* element);
+FG_EXTERN void FG_FASTCALL fgWindow_SetArea(fgWindow* self, const CRect* area);
+FG_EXTERN char FG_FASTCALL fgWindow_BasicMessage(fgWindow* self, unsigned char type); // Shortcut for sending type messages with no data
+FG_EXTERN char FG_FASTCALL fgWindow_VoidMessage(fgWindow* self, unsigned char type, void* data); // Shortcut for sending void* messages
+FG_EXTERN char FG_FASTCALL fgWindow_IntMessage(fgWindow* self, unsigned char type, int data); // Shortcut for sending int messages
 FG_EXTERN void FG_FASTCALL DoSkinCheck(fgWindow* self, fgStatic** skins, const FG_Msg* msg);
 
 #ifdef  __cplusplus

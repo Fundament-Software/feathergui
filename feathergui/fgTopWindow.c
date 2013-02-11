@@ -3,11 +3,11 @@
 
 #include "fgTopWindow.h"
 
-void FG_FASTCALL fgTopWindow_Init(fgTopWindow* self)
+void FG_FASTCALL fgTopWindow_Init(fgTopWindow* self, const fgElement* element, FG_UINT id, fgFlag flags)
 {
   assert(self!=0);
-  fgWindow_Init((fgWindow*)self,0);
-  fgWindow_Init(&self->region,(fgWindow*)self);
+  fgWindow_Init((fgWindow*)self,0,element,id,flags);
+  fgWindow_Init(&self->region,(fgWindow*)self,0,0,0);
   self->window.element.destroy=&fgTopWindow_Destroy;
   self->window.message=&fgTopWindow_Message;
 }
@@ -20,8 +20,6 @@ void FG_FASTCALL fgTopWindow_Destroy(fgTopWindow* self)
 
 char FG_FASTCALL fgTopWindow_Message(fgTopWindow* self, const FG_Msg* msg)
 {
-  long long curtime;
-  AbsRect r;
   assert(self!=0 && msg!=0);
 
   switch(msg->type)

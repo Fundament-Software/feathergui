@@ -14,13 +14,12 @@ extern "C" {
 // A Scrollbar area acts as a clipping area that has optional scrollbars to navigate the internal area.
 typedef struct {
   fgWindow window;
-  fgWindow area;
+  fgWindow area; // this is an internal window that actually contains all the children, so we can move them around efficiently.
   fgButton* btn[6]; // 0 - up arrow, 1 - down arrow, 2 - vertical slider, 3 - right arrow, 4 - left arrow, 6 - horz slider
   fgStatic* skin[2]; // 0 - vertical background, 1 - horizontal background
 } fgScrollbar;
 
-FG_EXTERN fgScrollbar* FG_FASTCALL fgScrollbar_Create();
-FG_EXTERN void FG_FASTCALL fgScrollbar_Init(fgScrollbar* self);
+FG_EXTERN void FG_FASTCALL fgScrollbar_Init(fgScrollbar* self, fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags);
 FG_EXTERN char FG_FASTCALL fgScrollbar_Message(fgScrollbar* self, const FG_Msg* msg);
 
 #ifdef  __cplusplus

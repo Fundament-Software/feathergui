@@ -28,11 +28,11 @@ struct FG_MENUITEM {
   fgMenu* submenu; // submenu's parent is the menu that this static is a child of.
 }; // By default a menu will only render text, but FGMENU_IMAGES will render a column of images on the left side for items that have them. This is automatically enabled when an item with an image is added, but can be manually turned on via SETFLAG
 
-FG_EXTERN fgMenu* FG_FASTCALL fgMenu_Create();
-FG_EXTERN void FG_FASTCALL fgMenu_Init(fgMenu* self);
+FG_EXTERN fgWindow* FG_FASTCALL fgMenu_Create(fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags);
+FG_EXTERN void FG_FASTCALL fgMenu_Init(fgMenu* self, fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags);
 FG_EXTERN void FG_FASTCALL fgMenu_Destroy(fgMenu* self);
 FG_EXTERN char FG_FASTCALL fgMenu_Message(fgMenu* self, const FG_Msg* msg);
-FG_EXTERN void FG_FASTCALL fgMenu_DoDropdown(fgMenu* self);
+FG_EXTERN char FG_FASTCALL fgMenu_DoDropdown(fgMenu* self);
 FG_EXTERN void FG_FASTCALL fgMenu_Morph(fgMenu* self);
 
 #ifdef  __cplusplus

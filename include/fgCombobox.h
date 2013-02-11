@@ -17,8 +17,8 @@ typedef struct {
   fgButton button;
 } fgCombobox;
 
-FG_EXTERN fgCombobox* FG_FASTCALL fgCombobox_Create(fgTriplet* item);
-FG_EXTERN void FG_FASTCALL fgCombobox_Init(fgCombobox* self);
+FG_EXTERN fgWindow* FG_FASTCALL fgCombobox_Create(fgTriplet* item, fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags);
+FG_EXTERN void FG_FASTCALL fgCombobox_Init(fgCombobox* self, fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags);
 FG_EXTERN char FG_FASTCALL fgCombobox_Message(fgCombobox* self, const FG_Msg* msg);
 
 #ifdef  __cplusplus

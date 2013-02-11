@@ -17,8 +17,8 @@ typedef struct {
   fgStatic* skin[2]; // 0 - background, 1 - cursor
 } fgTextbox;
 
-FG_EXTERN fgTextbox* FG_FASTCALL fgTextbox_Create();
-FG_EXTERN void FG_FASTCALL fgTextbox_Init(fgTextbox* self);
+FG_EXTERN fgWindow* FG_FASTCALL fgTextbox_Create(fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags);
+FG_EXTERN void FG_FASTCALL fgTextbox_Init(fgTextbox* self, fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags);
 FG_EXTERN char FG_FASTCALL fgTextbox_Message(fgTextbox* self, const FG_Msg* msg);
 
 #ifdef  __cplusplus

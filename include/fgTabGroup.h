@@ -17,8 +17,8 @@ typedef struct {
   fgStatic* skin[1]; // 0 - background
 } fgTabGroup;
 
-FG_EXTERN fgTabGroup* FG_FASTCALL fgTabGroup_Create();
-FG_EXTERN void FG_FASTCALL fgTabGroup_Init(fgTabGroup* self);
+FG_EXTERN fgWindow* FG_FASTCALL fgTabGroup_Create(fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags);
+FG_EXTERN void FG_FASTCALL fgTabGroup_Init(fgTabGroup* self, fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags);
 FG_EXTERN char FG_FASTCALL fgTabGroup_Message(fgTabGroup* self, const FG_Msg* msg);
 
 #ifdef  __cplusplus

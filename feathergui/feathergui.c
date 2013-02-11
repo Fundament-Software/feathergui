@@ -67,10 +67,16 @@ void FG_FASTCALL ResolveRectCache(AbsRect* r, const fgElement* elem, const AbsRe
 }
 
 // This uses a standard inclusive-exclusive rectangle interpretation.
+char FG_FASTCALL HitAbsRect(const AbsRect* r, FABS x, FABS y)
+{
+  assert(r!=0);
+  return (x < r->right) && (x >= r->left) && (y < r->bottom) && (y >= r->top);
+}
+
 char FG_FASTCALL MsgHitAbsRect(const FG_Msg* msg, const AbsRect* r)
 {
   assert(msg!=0 && r!=0);
-  return (msg->x < r->right) && (msg->x >= r->left) && (msg->y < r->bottom) && (msg->y >= r->top);
+  return HitAbsRect(r,msg->x,msg->y);
 }
 
 char FG_FASTCALL MsgHitCRect(const FG_Msg* msg, const fgChild* child)

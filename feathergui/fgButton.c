@@ -3,10 +3,10 @@
 
 #include "fgButton.h"
 
-void FG_FASTCALL fgButton_Init(fgButton* self)
+void FG_FASTCALL fgButton_Init(fgButton* self, fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags)
 {
   assert(self!=0);
-  fgWindow_Init(&self->window,0);
+  fgWindow_Init(&self->window,parent,element,id,flags);
   self->window.message=&fgButton_Message;
 }
 char FG_FASTCALL fgButton_Message(fgButton* self, const FG_Msg* msg)

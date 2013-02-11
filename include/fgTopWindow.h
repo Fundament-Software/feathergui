@@ -13,6 +13,11 @@ extern "C" {
 
 struct _FG_BUTTON;
 
+enum FGTOPWINDOW_MSGTYPE {
+  FGTOPWINDOW_SETMARGIN=FG_CUSTOMEVENT,
+  FGTOPWINDOW_SETCAPTION,
+};
+
 // A top-level window is an actual window with a titlebar that can be dragged and resized.
 typedef struct {
   fgWindow window;
@@ -21,8 +26,8 @@ typedef struct {
   AbsRect prevrect; // Stores where the window was before being maximized
 } fgTopWindow;
 
-FG_EXTERN fgTopWindow* FG_FASTCALL fgTopWindow_Create(fgRoot* root);
-FG_EXTERN void FG_FASTCALL fgTopWindow_Init(fgTopWindow* self);
+FG_EXTERN fgWindow* FG_FASTCALL fgTopWindow_Create(const char* caption, const fgElement* element, FG_UINT id, fgFlag flags);
+FG_EXTERN void FG_FASTCALL fgTopWindow_Init(fgTopWindow* self, const fgElement* element, FG_UINT id, fgFlag flags);
 FG_EXTERN void FG_FASTCALL fgTopWindow_Destroy(fgTopWindow* self);
 FG_EXTERN char FG_FASTCALL fgTopWindow_Message(fgTopWindow* self, const FG_Msg* msg);
 

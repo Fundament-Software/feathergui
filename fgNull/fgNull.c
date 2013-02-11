@@ -62,48 +62,35 @@ fgStatic* FG_FASTCALL fgLoadText(const char* text, unsigned int flags)
 {
   return NullRenderable();
 }
-fgButton* FG_FASTCALL fgButton_Create(fgStatic* item)
+fgWindow* FG_FASTCALL fgButton_Create(fgStatic* item, fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags)
 {
   fgButton* r = (fgButton*)malloc(sizeof(fgButton));
   r->window.message=&fgdebug_Message_fgButton;
-  fgButton_Init(r);
+  fgButton_Init(r,parent,element,id,flags);
   return r;
 }
-fgMenu* FG_FASTCALL fgMenu_Create()
+fgWindow* FG_FASTCALL fgMenu_Create(fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags)
 {
   fgMenu* r = (fgMenu*)malloc(sizeof(fgMenu));
   r->grid.window.message=&fgdebug_Message_fgMenu;
-  fgMenu_Init(r);
+  fgMenu_Init(r,parent,element,id,flags);
   return r;
 }
-fgTopWindow* FG_FASTCALL fgTopWindow_Create(fgRoot* root)
+fgWindow* FG_FASTCALL fgTopWindow_Create(const char* caption, const fgElement* element, FG_UINT id, fgFlag flags)
 {
   fgTopWindow* r = (fgTopWindow*)malloc(sizeof(fgTopWindow));
-  fgTopWindow_Init(r);
+  fgTopWindow_Init(r,element,id,flags);
   r->window.message=&fgdebug_Message_fgTopWindow;
   r->region.message=&fgdebug_Message_fgWindow;
-  fgWindow_VoidMessage(r,FG_SETPARENT,root);
+  fgWindow_VoidMessage(r,FG_SETPARENT,fgSingleton());
   return r;
-}
-
-void FG_FASTCALL fgRoot_destroy(fgRoot* self)
-{
-  (*self->mouse.element.destroy)(&self->mouse);
-  fgWindow_Destroy(self);
 }
 
 fgRoot* FG_FASTCALL fgInitialize()
 {
   fgRoot* r = (fgRoot*)malloc(sizeof(fgRoot));
   assert(!_fgroot);
-  fgWindow_Init((fgWindow*)r,0);
-  r->gui.element.destroy=&fgRoot_destroy;
-  r->behaviorhook=&fgRoot_BehaviorDefault;
-  r->update=&fgRoot_Update;
-  r->keymsghook=0;
-  r->time=0;
-  r->winrender=&fgRoot_WinRender;
-  fgWindow_Init(&r->mouse,0);
+  fgRoot_Init(r);
   return _fgroot=r;
 }
 fgRoot* FG_FASTCALL fgSingleton()

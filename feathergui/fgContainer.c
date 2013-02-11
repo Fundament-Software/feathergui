@@ -14,10 +14,10 @@ void FG_FASTCALL RegionDestroy(fgChild* self)
     LList_Remove(self,(fgChild**)&parent->regions,(fgChild**)&parent->regionslast); // Remove ourselves from our parent
 }
 
-void FG_FASTCALL fgContainer_Init(fgContainer* self)
+void FG_FASTCALL fgContainer_Init(fgContainer* self, fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags)
 {
   assert(self!=0);
-  fgWindow_Init(&self->window,0);
+  fgWindow_Init(&self->window,parent,element,id,flags);
   self->window.element.destroy=&fgContainer_Destroy; 
 }
 void FG_FASTCALL fgContainer_Destroy(fgContainer* self)

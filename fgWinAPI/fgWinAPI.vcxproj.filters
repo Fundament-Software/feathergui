@@ -18,9 +18,27 @@
     <ClCompile Include="fgWinAPI.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="WinAPIfgTop.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WinAPIfgButton.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WinAPIfgText.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WinAPIfgImage.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="fgWinAPI.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="win32_includes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
