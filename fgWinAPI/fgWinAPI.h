@@ -15,11 +15,15 @@
 #include "fgCombobox.h"
 #include "fgTextbox.h"
 
+#pragma comment(lib,"comctl32.lib")
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+
 #ifdef  __cplusplus
 extern "C" {
 #endif
   enum WINAPIFGTOP_MSGTYPE {
     WINAPIFGTOP_MSGFILTER=FGTOPWINDOW_SETCAPTION+1, // Use this to filter raw windows messages
+    WINAPIFGTOP_WINDOWMOVE,
   };
 
   typedef struct {
@@ -30,6 +34,7 @@ extern "C" {
   typedef struct {
     fgWindow window;
     void* handle;
+    ptrdiff_t (BSS_COMPILER_STDCALL *DefWndProc)(void*, unsigned int, size_t, ptrdiff_t);
   } WinAPIfgWindow;
 
   typedef struct {
@@ -44,6 +49,8 @@ extern "C" {
 
   typedef struct {
     WinAPIfgWindow wn;
+    fgWindow region;
+    int margin[4]; // ltrb rectangle
   } WinAPIfgTop;
 
   typedef struct {
@@ -82,7 +89,9 @@ extern "C" {
   //FG_EXTERN char FG_FASTCALL WinAPIfgRoot_Behavior(fgWindow* self, const FG_Msg* msg);
   // UTF8 to UTF16 conversion wrapper. Free t after you finish with it.
   FG_EXTERN void FG_FASTCALL WinAPIutf8to16(wchar_t** t, const char* src);
-
+  // FG_MOVE response function
+  FG_EXTERN void FG_FASTCALL WinAPI_FG_MOVE(WinAPIfgWindow* self);
+  
   typedef struct {
     fgRoot root;
     void* instance;

@@ -23,7 +23,7 @@ void FG_FASTCALL WinAPIfgText_Message(fgStatic* self, unsigned char type, void* 
   {
   case FG_RSETTEXT:
     if(s->text) free(s->text);
-    len=strlen((const char*)arg);
+    len=strlen((const char*)arg)+1;
     str=malloc(len);
     strncpy(str,(const char*)arg,len);
     s->text=str;
@@ -31,7 +31,7 @@ void FG_FASTCALL WinAPIfgText_Message(fgStatic* self, unsigned char type, void* 
   case FG_RCLONE:
     fgStatic_Clone((fgStatic*)arg,self); // this copies over the destroy function
     ((WinAPIfgText*)arg)->st.handle=0; //do handle duplication
-    len=strlen(s->text);
+    len=strlen(s->text)+1;
     str=malloc(len);
     strncpy(str,s->text,len);
     ((WinAPIfgText*)arg)->text=str;
@@ -43,7 +43,7 @@ void FG_FASTCALL WinAPIfgText_Message(fgStatic* self, unsigned char type, void* 
 
 fgStatic* FG_FASTCALL fgLoadText(const char* text, unsigned int flags)
 {
-  size_t len=strlen(text);
+  size_t len=strlen(text)+1;
   char* str=(char*)malloc(len);
   WinAPIfgText* r = (WinAPIfgText*)malloc(sizeof(WinAPIfgText));
   fgStatic_Init((fgStatic*)r);

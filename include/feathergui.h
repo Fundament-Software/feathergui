@@ -195,11 +195,14 @@ FG_EXTERN void FG_FASTCALL fgChild_ExpandY(fgChild* self, fgElement* elem);
 
 FG_EXTERN AbsVec FG_FASTCALL ResolveVec(const CVec* v, const AbsRect* last);
 FG_EXTERN void FG_FASTCALL ResolveRect(const fgChild* self, AbsRect* out);
-FG_EXTERN void FG_FASTCALL ResolveRectCache(AbsRect* r, const fgElement* elem, const AbsRect* last);
+FG_EXTERN void FG_FASTCALL ResolveRectCache(AbsRect* BSS_RESTRICT r, const fgElement* elem, const AbsRect* BSS_RESTRICT last);
 FG_EXTERN char FG_FASTCALL CompareCRects(const CRect* l, const CRect* r); // Returns 0 if both are the same or 1 otherwise
 FG_EXTERN char FG_FASTCALL CompChildOrder(const fgChild* l, const fgChild* r);
 FG_EXTERN void FG_FASTCALL MoveCRect(AbsVec* v, CRect* r);
 FG_EXTERN char FG_FASTCALL HitAbsRect(const AbsRect* r, FABS x, FABS y);
+//FG_EXTERN void FG_FASTCALL ToIntAbsRect(const AbsRect* r, int target[static 4]);
+FG_EXTERN void FG_FASTCALL ToIntAbsRect(const AbsRect* r, int target[4]);
+FG_EXTERN void FG_FASTCALL ToLongAbsRect(const AbsRect* r, long target[4]);
 FG_EXTERN char FG_FASTCALL MsgHitAbsRect(const FG_Msg* msg, const AbsRect* r);
 FG_EXTERN char FG_FASTCALL MsgHitCRect(const FG_Msg* msg, const fgChild* child);
 FG_EXTERN void FG_FASTCALL LList_Remove(fgChild* self, fgChild** root, fgChild** last);

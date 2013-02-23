@@ -5,6 +5,7 @@
 #include "bss_defines.h"
 #include "win32_includes.h"
 #include <CommCtrl.h>
+#include <dwmapi.h>
 
 #if defined(BSS_DEBUG) && defined(BSS_CPU_x86_64)
 #pragma comment(lib, "../bin/feathergui64_d.lib")
@@ -16,7 +17,9 @@
 #pragma comment(lib, "../bin/feathergui.lib")
 #endif
 
+HRESULT (__stdcall *dwmextend)(HWND, const MARGINS*) = 0;   
 WinAPIfgRoot* _fgroot=0; // fgRoot singleton variable
+HBRUSH hbrBlack;
 
 fgStatic* FG_FASTCALL fgLoadVector(const char* path)
 {
@@ -56,6 +59,7 @@ void FG_FASTCALL WinAPIfgRoot_Update(fgRoot* self, double delta)
 
 fgRoot* FG_FASTCALL WinAPIfgInitialize(void* instance)
 {
+  HMODULE dwm;
   WNDCLASSEXW wcex = { sizeof(WNDCLASSEXW), // cbSize
             CS_HREDRAW | CS_VREDRAW,        // style
             (WNDPROC)fgWindowWndProc,       // lpfnWndProc
@@ -64,7 +68,7 @@ fgRoot* FG_FASTCALL WinAPIfgInitialize(void* instance)
             instance,                       // hInstance
             NULL,                           // hIcon
             NULL,                           // hCursor
-            GetSysColorBrush(COLOR_WINDOW), // hbrBackground
+            GetSysColorBrush(COLOR_3DFACE), // hbrBackground
             NULL,                           // lpszMenuName
             L"FeatherWindow",               // lpszClassName
             NULL};                          // hIconSm
@@ -79,6 +83,14 @@ fgRoot* FG_FASTCALL WinAPIfgInitialize(void* instance)
   if(!InitCommonControlsEx(&initex)) {
     assert(0);
     return 0;
+  }
+  
+  hbrBlack=GetStockObject(BLACK_BRUSH);
+  dwm=LoadLibraryW(L"dwmapi.dll");
+  if(dwm)
+  {
+    dwmextend = GetProcAddress(dwm,"DwmExtendFrameIntoClientArea");
+    FreeLibrary(dwm);
   }
 
   _fgroot = (WinAPIfgRoot*)malloc(sizeof(WinAPIfgRoot));
@@ -123,6 +135,24 @@ void FG_FASTCALL WinAPIfgWindow_Destroy(fgWindow* self)
   ((WinAPIfgWindow*)self)->handle=0;
   DestroyWindow(h); // Do winAPI destruction
 }
+void FG_FASTCALL WinAPI_FG_MOVE(WinAPIfgWindow* self)
+{
+  BOOL ret;
+  AbsRect r;
+  AbsRect d={0};
+  int ri[4];
+  fgChild* p=self->window.element.parent;
+  if(p!=0)
+  {
+    d.right=p->element.area.right.abs-p->element.area.left.abs;
+    d.bottom=p->element.area.bottom.abs-p->element.area.top.abs;
+  }
+  ResolveRectCache(&r,(fgElement*)self,&d);
+  assert(self->handle!=0);
+  ToIntAbsRect(&r,ri);
+  ret = MoveWindow(self->handle,ri[0],ri[1],ri[2]-ri[0],ri[3]-ri[1],TRUE);
+  assert(ret!=0);
+}
 
 unsigned char getallbtn(WPARAM wParam)
 {
@@ -145,6 +175,7 @@ LRESULT CALLBACK fgWindowWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
   WinAPIfgWindow* wn;
   FG_Msg msg={0};
   WinAPIMessage wmsg = { message, wParam, lParam };
+  char c;
 
   wn = (WinAPIfgWindow*)GetWindowLongPtr(hWnd,GWLP_USERDATA);
   
@@ -173,14 +204,14 @@ LRESULT CALLBACK fgWindowWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
     assert(wn!=0);
   }
   
-  if(wn!=0)
-  {
-    msg.type=WINAPIFGTOP_MSGFILTER;
-    msg.other=&wmsg;
-    if((*_fgroot->root.behaviorhook)((fgWindow*)wn,&msg)!=0) // We invert the meaning of 1 and 0 here so it remains a sane default.
-      return 0;
-    msg.other=0;
-  }
+  if(!wn)
+	  return DefWindowProcW(hWnd, message, wParam, lParam);
+
+  msg.type=WINAPIFGTOP_MSGFILTER;
+  msg.other=&wmsg;
+  if((c=(*_fgroot->root.behaviorhook)((fgWindow*)wn,&msg))!=0) // We invert the meaning of 1 and 0 here so it remains a sane default.
+    return (c<0)?1:0;
+  msg.other=0;
 
   switch (message)
 	{
@@ -202,6 +233,14 @@ LRESULT CALLBACK fgWindowWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
       VirtualFreeChild((fgChild*)wn);
     }
     break;
+  case WM_COMMAND:
+    if(lParam!=0) // If we get a WM_COMMAND message from a control, pass it to the control so it can handle it.
+    {
+      msg.type=WINAPIFGTOP_MSGFILTER;
+      msg.other=&wmsg;
+      (*_fgroot->root.behaviorhook)((fgWindow*)GetWindowLongPtr((HWND)lParam,GWLP_USERDATA),&msg);
+    }
+    break;
   case WM_MOUSEWHEEL:
     msg.type=FG_MOUSESCROLL;
     msg.scrolldelta=GET_WHEEL_DELTA_WPARAM(wParam);
@@ -221,7 +260,6 @@ LRESULT CALLBACK fgWindowWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
     msg.button=FG_MOUSELBUTTON;
     makelparampts(&msg,MAKELPPOINTS(lParam));
     (*_fgroot->root.behaviorhook)((fgWindow*)wn,&msg);
-    SetCapture(hWnd);
     break;	
   case WM_LBUTTONUP:
     msg.type=FG_MOUSEUP;
@@ -229,7 +267,6 @@ LRESULT CALLBACK fgWindowWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
     msg.button=FG_MOUSELBUTTON;
     makelparampts(&msg,MAKELPPOINTS(lParam));
     (*_fgroot->root.behaviorhook)((fgWindow*)wn,&msg);
-    ReleaseCapture();
     break;
   case WM_LBUTTONDBLCLK:
     msg.type=FG_MOUSEDOWN;
@@ -239,7 +276,6 @@ LRESULT CALLBACK fgWindowWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
     (*_fgroot->root.behaviorhook)((fgWindow*)wn,&msg);
     break;
   case WM_RBUTTONDOWN:
-    SetCapture(hWnd);
     msg.type=FG_MOUSEDOWN;
     msg.allbtn=getallbtn(wParam);
     msg.button=FG_MOUSERBUTTON;
@@ -252,7 +288,6 @@ LRESULT CALLBACK fgWindowWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
     msg.button=FG_MOUSERBUTTON;
     makelparampts(&msg,MAKELPPOINTS(lParam));
     (*_fgroot->root.behaviorhook)((fgWindow*)wn,&msg);
-    ReleaseCapture();
     break;	
   case WM_RBUTTONDBLCLK:
     msg.type=FG_MOUSEDOWN;
@@ -262,7 +297,6 @@ LRESULT CALLBACK fgWindowWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
     (*_fgroot->root.behaviorhook)((fgWindow*)wn,&msg);
     break;
   case WM_MBUTTONDOWN:
-    SetCapture(hWnd);
     msg.type=FG_MOUSEDOWN;
     msg.allbtn=getallbtn(wParam);
     msg.button=FG_MOUSEMBUTTON;
@@ -275,7 +309,6 @@ LRESULT CALLBACK fgWindowWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
     msg.button=FG_MOUSEMBUTTON;
     makelparampts(&msg,MAKELPPOINTS(lParam));
     (*_fgroot->root.behaviorhook)((fgWindow*)wn,&msg);
-    ReleaseCapture();
     break;	
   case WM_MBUTTONDBLCLK:
     msg.type=FG_MOUSEDOWN;
@@ -315,7 +348,7 @@ LRESULT CALLBACK fgWindowWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
     msg.keycode=(unsigned char)wParam;
     msg.sigkeys=((allkeys[VK_SHIFT] & 0x80)>>7)|((allkeys[VK_CONTROL] & 0x80)>>6)|((allkeys[VK_MENU] & 0x80)>>5)|(((lParam&0x40000000)!=0)<<3);
     (*_fgroot->root.behaviorhook)((fgWindow*)wn,&msg);
-    return 0;
+    break;
   case WM_ACTIVATE:
     //if(_ps_enginemouselock) {
     //  switch(LOWORD(wParam))
@@ -342,22 +375,17 @@ LRESULT CALLBACK fgWindowWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
     msg.sigkeys=((allkeys[VK_SHIFT] & 0x80)>>7)|((allkeys[VK_CONTROL] & 0x80)>>6)|((allkeys[VK_MENU] & 0x80)>>5);
     (*_fgroot->root.behaviorhook)((fgWindow*)wn,&msg);
     return 0;
-  //case WM_WINDOWPOSCHANGING:
-  //case WM_WINDOWPOSCHANGED: // Make sure we keep track of where the window actually is.
-  //  narea.left.abs=((WINDOWPOS*)lParam)->x;
-  //  narea.left.rel=0;
-  //  narea.top.abs=((WINDOWPOS*)lParam)->y;
-  //  narea.top.rel=0;
-  //  narea.right.abs=((WINDOWPOS*)lParam)->x+((WINDOWPOS*)lParam)->cx;
-  //  narea.right.rel=0;
-  //  narea.bottom.abs=((WINDOWPOS*)lParam)->y+((WINDOWPOS*)lParam)->cy;
-  //  narea.bottom.rel=0;
-  //  fgWindow_SetArea(wn->window,&narea);
-  //  return 0;
+  case WM_WINDOWPOSCHANGING:
+  case WM_WINDOWPOSCHANGED: // Make sure we keep track of where the window actually is.
+    msg.type=WINAPIFGTOP_WINDOWMOVE;
+    msg.other=(WINDOWPOS*)lParam;
+    (*_fgroot->root.behaviorhook)((fgWindow*)wn,&msg);
+    break;
   //default:
   //  OutputDebugString(cStr("\n%i",message));
   //  break;
   }
 
-	return DefWindowProcW(hWnd, message, wParam, lParam);
+  return (*wn->DefWndProc)(hWnd, message, wParam, lParam);
+	//return DefWindowProcW(hWnd, message, wParam, lParam);
 }

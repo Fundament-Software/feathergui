@@ -2,6 +2,8 @@
 // For conditions of distribution and use, see copyright notice in "feathergui.h"
 
 #include "feathergui.h"
+#include <intrin.h>
+#include <limits.h>
 
 AbsVec FG_FASTCALL ResolveVec(const CVec* v, const AbsRect* last)
 {
@@ -47,7 +49,7 @@ void FG_FASTCALL ResolveRect(const fgChild* self, AbsRect* out)
   out->bottom -= center.y;
 }
 
-void FG_FASTCALL ResolveRectCache(AbsRect* r, const fgElement* elem, const AbsRect* last)
+void FG_FASTCALL ResolveRectCache(AbsRect* BSS_RESTRICT r, const fgElement* elem, const AbsRect* BSS_RESTRICT last)
 {
   AbsVec center = { elem->center.x.abs, elem->center.y.abs };
   const CRect* v=&elem->area;
@@ -217,4 +219,24 @@ void FG_FASTCALL VirtualFreeChild(fgChild* self)
   assert(self!=0);
   (*self->destroy)(self);
   (*self->free)(self);
+}
+//void FG_FASTCALL ToIntAbsRect(const AbsRect* r, int target[static 4]) // Gotta love VC++ not supporting C99 which is 14 FUCKING YEARS OLD
+void FG_FASTCALL ToIntAbsRect(const AbsRect* r, int target[4])
+{
+  _mm_storeu_si128((__m128i*)target,_mm_cvtps_epi32(_mm_loadu_ps(&r->left)));
+}
+
+void FG_FASTCALL ToLongAbsRect(const AbsRect* r, long target[4])
+{
+#if ULONG_MAX==UINT_MAX
+  _mm_storeu_si128((__m128i*)target,_mm_cvtps_epi32(_mm_loadu_ps(&r->left)));
+#else
+  int hold[4];
+  _mm_storeu_si128((__m128i*)hold,_mm_cvtps_epi32(_mm_loadu_ps(&r->left)));
+  target[0]=hold[0];
+  target[1]=hold[1];
+  target[2]=hold[2];
+  target[3]=hold[3];
+#endif
+
 }

@@ -7,7 +7,7 @@ void FG_FASTCALL fgTopWindow_Init(fgTopWindow* self, const fgElement* element, F
 {
   assert(self!=0);
   fgWindow_Init((fgWindow*)self,0,element,id,flags);
-  fgWindow_Init(&self->region,(fgWindow*)self,0,0,0);
+  fgWindow_Init(&self->region,(fgWindow*)self,element,0,0);
   self->window.element.destroy=&fgTopWindow_Destroy;
   self->window.message=&fgTopWindow_Message;
 }

@@ -498,6 +498,34 @@ RETPAIR test_TERMINATE()
 //	return 0;
 //}
 
+//int files_match(char * fname1, char * fname2)
+//{
+//  char buf1[200];
+//  char buf2[200];
+//  FILE* f1 = fopen(fname1,"r");
+//  FILE* f2 = fopen(fname2,"r");
+//  
+//  if(!f1 || !f2)
+//    return 0;
+//
+//  while(!feof(f1) && !feof(f2))
+//  {
+//    fgets(buf1,200,f1);
+//    fgets(buf2,200,f2);
+//    if(strcmp(buf1,buf2)!=0)
+//      return 0;
+//  }
+//
+//  return 1;
+//}
+//
+//int main() {
+//  printf("%d",files_match("D:/NOTES.txt","D:/NOTES.txt"));
+//  printf("%d",files_match("D:/NOTES.txt","D:/NOTES2.txt"));
+//  printf("%d",files_match("D:/NOTES3.txt","D:/NOTES.txt"));
+//  getc(stdin);
+//  return 0;
+//}
 
 int main(int argc, char** argv)
 {
@@ -548,6 +576,7 @@ int main(int argc, char** argv)
 
   printf("\nPress Enter to exit the program.");
   getc(stdin);
+  return 0;
 }
 
 struct HINSTANCE__;
