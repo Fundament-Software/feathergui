@@ -47,7 +47,7 @@ fgStatic* FG_FASTCALL fgLoadText(const char* text, unsigned int flags)
   char* str=(char*)malloc(len);
   WinAPIfgText* r = (WinAPIfgText*)malloc(sizeof(WinAPIfgText));
   fgStatic_Init((fgStatic*)r);
-  r->st.render.flags=flags;
+  r->st.render.element.flags=flags;
   r->st.render.element.destroy=WinAPIfgText_Destroy;
   strncpy(str,text,len);
   r->text=str;

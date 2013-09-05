@@ -98,18 +98,25 @@ void FG_FASTCALL LList_Remove(fgChild* self, fgChild** root, fgChild** last)
   else *last = self->prev;
 }
 
-void FG_FASTCALL LList_Add(fgChild* self, fgChild** root, fgChild** last)
+//me cur
+//y  y  | order<order
+//y  n  | false
+//n  y  | true
+//n  n  | order<order
+
+void FG_FASTCALL LList_Add(fgChild* self, fgChild** root, fgChild** last, fgFlag flag)
 {
   fgChild* cur = *root;
   fgChild* prev = 0; // Sadly the elegant pointer to pointer method doesn't work for doubly linked lists.
   assert(self!=0 && root!=0);
   if(!cur) // We do this check up here because we'd have to do it for the end append check below anyway so we might as well utilize it!
     (*last)=(*root)=self;
-  else if(self->order<(*last)->order) { // shortcut for appending to the end of the list
+  //else if(self->order<(*last)->order) { // shortcut for appending to the end of the list
+  else if(((self->flags&flag) < ((*last)->flags&flag)) || ((self->order < (*last)->order) && (self->flags&flag) == ((*last)->flags&flag))) {
     cur=0;
     prev=*last;
   } else {
-    while(cur != 0 && self->order < cur->order)
+    while(cur != 0 && (((self->flags&flag) < (cur->flags&flag)) || ((self->order < cur->order) && (self->flags&flag) == (cur->flags&flag))))
     {
        prev = cur;
        cur = cur->next;
@@ -141,7 +148,7 @@ void FG_FASTCALL fgChild_Destroy(fgChild* self)
     LList_Remove(self,&self->parent->root,&self->parent->last); // Remove ourselves from our parent
 }
 
-void FG_FASTCALL fgChild_SetParent(fgChild* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent)
+void FG_FASTCALL fgChild_SetParent(fgChild* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent, fgFlag flag)
 {
   assert(self!=0);
   if(self->parent!=0)
@@ -152,7 +159,7 @@ void FG_FASTCALL fgChild_SetParent(fgChild* BSS_RESTRICT self, fgChild* BSS_REST
   self->parent=parent;
 
   if(parent)
-    LList_Add(self,&parent->root,&parent->last);
+    LList_Add(self,&parent->root,&parent->last,flag);
 }
 
 void FG_FASTCALL fgChild_ExpandX(fgChild* self, fgElement* elem)
@@ -223,13 +230,13 @@ void FG_FASTCALL VirtualFreeChild(fgChild* self)
 //void FG_FASTCALL ToIntAbsRect(const AbsRect* r, int target[static 4]) // Gotta love VC++ not supporting C99 which is 14 FUCKING YEARS OLD
 void FG_FASTCALL ToIntAbsRect(const AbsRect* r, int target[4])
 {
-  _mm_storeu_si128((__m128i*)target,_mm_cvtps_epi32(_mm_loadu_ps(&r->left)));
+  _mm_storeu_si128((__m128i*)target,_mm_cvttps_epi32(_mm_loadu_ps(&r->left)));
 }
 
 void FG_FASTCALL ToLongAbsRect(const AbsRect* r, long target[4])
 {
 #if ULONG_MAX==UINT_MAX
-  _mm_storeu_si128((__m128i*)target,_mm_cvtps_epi32(_mm_loadu_ps(&r->left)));
+  _mm_storeu_si128((__m128i*)target,_mm_cvttps_epi32(_mm_loadu_ps(&r->left)));
 #else
   int hold[4];
   _mm_storeu_si128((__m128i*)hold,_mm_cvtps_epi32(_mm_loadu_ps(&r->left)));

@@ -38,8 +38,6 @@ fgStatic* FG_FASTCALL fgEmptyStatic()
 {
   fgStatic* r = (fgStatic*)malloc(sizeof(fgStatic));
   fgStatic_Init(r);
-  r->message=&fgStatic_MessageEmpty;
-  r->flags=FGSTATIC_EXPANDX|FGSTATIC_EXPANDY;
   return r;
 }
 fgStatic* FG_FASTCALL fgLoadImage(const char* path)

@@ -43,7 +43,7 @@ char FG_FASTCALL fgMenu_Message(fgMenu* self, const FG_Msg* msg)
     if(self->expanded!=0) break;
     curtime = clock()/(CLOCKS_PER_SEC/1000);
     item=(struct FG_MENUITEM*)fgGrid_HitElement(&self->grid,msg->x,msg->y);
-    if(!item || item->submenu==-1) // if it didn't hit anything, or it hit a divider, hide skin[1]
+    if(!item || item->submenu==(void*)-1) // if it didn't hit anything, or it hit a divider, hide skin[1]
       (*self->skin[1]->message)(self->skin[1],FG_RSHOW,0);
     else if(self->dropdown->arg!=item) // Otherwise reposition skin[1] properly, if position actually changed
     {

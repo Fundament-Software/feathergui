@@ -8,7 +8,7 @@ void FG_FASTCALL RegionDestroy(fgChild* self)
   fgContainer* parent = (fgContainer*)self->parent;
   assert(self!=0);
   while(self->root) // Recursively set all children's parents to 0
-    fgChild_SetParent(self->root, 0);
+    fgChild_SetParent(self->root, 0, FGWIN_NOCLIP);
 
   if(parent!=0)
     LList_Remove(self,(fgChild**)&parent->regions,(fgChild**)&parent->regionslast); // Remove ourselves from our parent
@@ -35,7 +35,7 @@ fgWindow* FG_FASTCALL fgContainer_AddRegion(fgContainer* self, fgElement* region
   r->element.destroy=fgWindow_Destroy;
   r->element.parent=&self->window.element;
 
-  LList_Add((fgChild*)r,(fgChild**)&self->regions,(fgChild**)&self->regionslast);
+  LList_Add((fgChild*)r,(fgChild**)&self->regions,(fgChild**)&self->regionslast,FGWIN_NOCLIP);
   memcpy(&r->element.element,region,sizeof(fgElement));
   return r;
 }

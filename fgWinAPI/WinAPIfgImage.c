@@ -17,7 +17,7 @@ fgStatic* FG_FASTCALL fgLoadImageData(const void* data, size_t length)
 
 void FG_FASTCALL WinAPIfgImage_Destroy(WinAPIfgImage* self)
 {
-  switch(self->st.render.flags&0x18) // We store what type it is here
+  switch(self->st.render.element.flags&0x18) // We store what type it is here
   {
   case 8:
     DestroyCursor(self->imghandle);

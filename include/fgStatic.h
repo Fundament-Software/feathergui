@@ -32,31 +32,28 @@ enum FG_RENDERMSG
 
 enum FG_STATICFLAGS
 {
-  FGSTATIC_CLIP=1, // Causes an empty static to clip its children. Setting this to true will automatically disable EXPANDX and EXPANDY.
-  FGSTATIC_EXPANDX=2, // Causes and empty static to always expand its X axis to contain its children. This is the default behavior.
-  FGSTATIC_EXPANDY=4, // Same for Y axis. Note that if you set FGSTATIC_CLIP, you can still set one axis to expand by re-enabling its flag.
+  FGSTATIC_CLIP=1, // Causes any type of static to clip its children.
 };
 
 enum FG_TEXTFLAGS
 {
-  FGTEXT_CHARWRAP=1, // Wraps lines that go past the edge of the container by character
-  FGTEXT_WORDWRAP=2, // Wraps lines that go past the edge of the container by word (the definition of a "word" is implementation specific)
-  FGTEXT_ELLIPSES=4, // Lines that go past the bounderies of the text object are cut off with an ellipses (...)
-  FGTEXT_RTL=8, // Forces right-to-left text rendering.
-  FGTEXT_RIGHTALIGN=16,
-  FGTEXT_CENTER=32, // Text horizontal centering behaves differently, because it centers each individual line.
-  FGTEXT_STRETCH=64, // Stretches the text to fill the area.
+  FGTEXT_CHARWRAP=2, // Wraps lines that go past the edge of the container by character
+  FGTEXT_WORDWRAP=4, // Wraps lines that go past the edge of the container by word (the definition of a "word" is implementation specific)
+  FGTEXT_ELLIPSES=8, // Lines that go past the bounderies of the text object are cut off with an ellipses (...)
+  FGTEXT_RTL=16, // Forces right-to-left text rendering.
+  FGTEXT_RIGHTALIGN=32,
+  FGTEXT_CENTER=64, // Text horizontal centering behaves differently, because it centers each individual line.
+  FGTEXT_STRETCH=128, // Stretches the text to fill the area.
 };
 
 enum FG_IMAGEFLAGS
 {
-  FGIMAGE_STRETCH=1, // Stretches the image instead of tiling it
-  FGIMAGE_TILEALIGNRIGHT=2, // When tiling an image the image's origin is on the right instead of the left.
-  FGIMAGE_TILEALIGNBOTTOM=4, // The image origin is on the bottom instead of the top.
+  FGIMAGE_STRETCH=2, // Stretches the image instead of tiling it
+  FGIMAGE_TILEALIGNRIGHT=4, // When tiling an image the image's origin is on the right instead of the left.
+  FGIMAGE_TILEALIGNBOTTOM=8, // The image origin is on the bottom instead of the top.
 };
 
 struct __WINDOW;
-typedef unsigned short fgFlag;
 
 // Representation of a static, which is implemented by the GUI implementation
 typedef struct __RENDERABLE {
@@ -64,18 +61,17 @@ typedef struct __RENDERABLE {
   void (FG_FASTCALL *message)(struct __RENDERABLE* self, unsigned char type, void* arg);
   struct __RENDERABLE* (FG_FASTCALL *clone)(struct __RENDERABLE* self);
   struct __WINDOW* parent;
-  fgFlag flags; // Only used by fgStatic_MessageEmpty
   void* userdata;
 } fgStatic;
 
 FG_EXTERN void FG_FASTCALL fgStatic_Init(fgStatic* self);
 FG_EXTERN void FG_FASTCALL fgStatic_Destroy(fgStatic* self);
 FG_EXTERN void FG_FASTCALL fgStatic_Message(fgStatic* self, unsigned char type, void* arg);
-FG_EXTERN void FG_FASTCALL fgStatic_MessageEmpty(fgStatic* self, unsigned char type, void* arg);
 FG_EXTERN void FG_FASTCALL fgStatic_SetWindow(fgStatic* self, struct __WINDOW* window);
 FG_EXTERN void FG_FASTCALL fgStatic_RemoveParent(fgStatic* self);
 FG_EXTERN void FG_FASTCALL fgStatic_NotifyParent(fgStatic* self);
 FG_EXTERN void FG_FASTCALL fgStatic_Clone(fgStatic* self, fgStatic* from); // Clones information and all the children from "from" to "self"
+FG_EXTERN void FG_FASTCALL fgStatic_SetParent(fgStatic* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent);
 
 FG_EXTERN fgStatic* FG_FASTCALL fgLoadImage(const char* path);
 FG_EXTERN fgStatic* FG_FASTCALL fgLoadImageData(const void* data, size_t length);

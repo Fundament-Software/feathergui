@@ -74,7 +74,7 @@ void FG_FASTCALL fgSkin_Apply(fgSkin* self, fgWindow* target)
 }
 void FG_FASTCALL fgSkin_Add(fgSkin* self, fgStatic* stat)
 {
-  LList_Add((fgChild*)stat,(fgChild**)&self->root,(fgChild**)&self->last);
+  LList_Add((fgChild*)stat,(fgChild**)&self->root,(fgChild**)&self->last,0);
   stat->parent=0;
   stat->element.parent=0;
 }

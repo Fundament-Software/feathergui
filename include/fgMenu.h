@@ -11,12 +11,10 @@
 extern "C" {
 #endif
 
-struct FG_MENUITEM;
-
 // A Menu is either a window menu or a context menu. Turns into a menubar if made the child of a top-level window
 typedef struct FG_MENU {
   fgWindow window; 
-  fgGrid grid; // This grid has only FG_MENUITEM objects in it.
+  fgGrid grid; // This grid contains 3 other grids for each column, plus one for submenus
   fgWindow overlay; // Sizeless overlay component that lets us render highlighters and selectors
   struct FG_MENUITEM* expanded; // Stores the current item that has an expanded submenu, if any exist.
   fgStatic* skin[4]; // index 0 is the background to the menu, 1 is the highlighter, 2 is the seperator, 3 is the submenu arrow

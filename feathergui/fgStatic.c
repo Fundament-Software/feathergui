@@ -10,7 +10,7 @@ void FG_FASTCALL fgStatic_Init(fgStatic* self)
   self->message=&fgStatic_Message; 
   self->element.destroy=&fgStatic_Destroy; 
   self->parent=0;
-  self->flags=0;
+  self->element.flags=0;
 }
 
 void FG_FASTCALL fgStatic_Destroy(fgStatic* self)
@@ -48,17 +48,19 @@ void FG_FASTCALL fgStatic_Message(fgStatic* self, unsigned char type, void* arg)
   {
   case FG_RADDCHILD:
     fgStatic_NotifyParent((fgStatic*)arg);
-    fgChild_SetParent(&((fgStatic*)arg)->element,&self->element);
+    fgStatic_SetParent((fgStatic*)arg,&self->element);
     break;
   case FG_RREMOVECHILD:
     assert(((fgStatic*)arg)->element.parent==&self->element);
-    fgChild_SetParent((fgChild*)arg,0);
+    fgStatic_SetParent((fgStatic*)arg,0);
     break;
   case FG_RSETAREA:
     memcpy(&self->element.element.area,arg,sizeof(CRect));
+    (self->message)(self,FG_RMOVE,0);
     break;
   case FG_RSETELEMENT:
     memcpy(&self->element.element,arg,sizeof(fgElement));
+    (self->message)(self,FG_RMOVE,0);
     break;
   case FG_RSETORDER:
     self->element.order=(FG_UINT)arg;
@@ -66,40 +68,51 @@ void FG_FASTCALL fgStatic_Message(fgStatic* self, unsigned char type, void* arg)
     if(self->parent!=0 && (&self->parent->element)==self->element.parent)
       fgWindow_VoidMessage(self->parent,FG_ADDSTATIC,self);
     else if(self->element.parent!=0)
-      fgChild_SetParent(&self->element,self->element.parent);
+      fgStatic_SetParent(self,self->element.parent);
     break;
   case FG_RSETFLAGS:
-    self->flags=(fgFlag)arg;
+    self->element.flags=(fgFlag)arg;
     break;
   case FG_RCLONE:
     assert(arg!=0);
     fgStatic_Clone(arg,self);  
     break;
-  }
-}
-void FG_FASTCALL fgStatic_MessageEmpty(fgStatic* self, unsigned char type, void* arg)
-{
-  assert(self!=0);
-
-  fgStatic_Message(self,type,arg);
-
-  switch(type)
-  {
-  case FG_RADDCHILD:
-  case FG_RREMOVECHILD:
   case FG_RMOVE:
-    if(self->flags&(FGWIN_EXPANDX|FGWIN_EXPANDY)) // Should we expand?
-    {
-      if(self->flags&FGSTATIC_EXPANDX) fgChild_ExpandX((fgChild*)self,arg);
-      if(self->flags&FGSTATIC_EXPANDY) fgChild_ExpandY((fgChild*)self,arg);
-      if(self->parent!=0 && (&self->parent->element)==self->element.parent) // If our parent is a window, pass it an FG_MOVE message
-        fgWindow_VoidMessage(self->parent,FG_MOVE,self);
-      else if(self->element.parent!=0) // Otherwise if our parent exists, its an fgStatic, so pass it an FG_RMOVE message.
-        (*((fgStatic*)self->element.parent)->message)((fgStatic*)self->element.parent,FG_RMOVE,self);
-    }
+    if(self->parent!=0 && (&self->parent->element)==self->element.parent) // If our parent is a window, pass it an FG_MOVE message
+      fgWindow_VoidMessage(self->parent,FG_MOVE,self);
     break;
   }
 }
+
+void FG_FASTCALL fgStatic_SetParent(fgStatic* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent)
+{
+  fgChild_SetParent((fgChild*)self,parent,0);
+  (self->message)(self,FG_RMOVE,0);
+}
+
+//void FG_FASTCALL fgStatic_MessageEmpty(fgStatic* self, unsigned char type, void* arg)
+//{
+//  assert(self!=0);
+//
+//  fgStatic_Message(self,type,arg);
+//
+//  switch(type)
+//  {
+//  case FG_RADDCHILD:
+//  case FG_RREMOVECHILD:
+//  case FG_RMOVE:
+//    if(self->element.flags&(FGWIN_EXPANDX|FGWIN_EXPANDY)) // Should we expand?
+//    {
+//      if(self->element.flags&FGSTATIC_EXPANDX) fgChild_ExpandX((fgChild*)self,arg);
+//      if(self->element.flags&FGSTATIC_EXPANDY) fgChild_ExpandY((fgChild*)self,arg);
+//      if(self->parent!=0 && (&self->parent->element)==self->element.parent) // If our parent is a window, pass it an FG_MOVE message
+//        fgWindow_VoidMessage(self->parent,FG_MOVE,self);
+//      else if(self->element.parent!=0) // Otherwise if our parent exists, its an fgStatic, so pass it an FG_RMOVE message.
+//        (*((fgStatic*)self->element.parent)->message)((fgStatic*)self->element.parent,FG_RMOVE,self);
+//    }*/
+//    break;
+//  }
+//}
 
 void FG_FASTCALL fgStatic_SetWindow(fgStatic* self, struct __WINDOW* window)
 {

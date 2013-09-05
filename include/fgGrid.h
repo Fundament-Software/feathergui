@@ -13,7 +13,8 @@ extern "C" {
 // A grid arranges statics according to a tiling and margin system.
 typedef struct {
   fgWindow window; // Note that the window flags consider 16 to be tile on x-axis, 32 to tile on y-axis, 48 both.
-  AbsRect margins;
+  AbsVec margins;
+  AbsRect padding;
 } fgGrid;
 
 FG_EXTERN void FG_FASTCALL fgGrid_Init(fgGrid* self, fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags);

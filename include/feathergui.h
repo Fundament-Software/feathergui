@@ -30,6 +30,7 @@ extern "C" {
 typedef float FREL; // Change this to double for double precision (why on earth you would need that for a GUI, however, is beyond me)
 typedef float FABS; // We seperate both of these types because then you don't have to guess if a float is relative or absolute
 typedef unsigned int FG_UINT;
+typedef unsigned short fgFlag;
 
 #define FGUI_VERSION_MAJOR 0
 #define FGUI_VERSION_MINOR 1
@@ -79,27 +80,27 @@ static BSS_FORCEINLINE FABS FG_FASTCALL lerp(FABS a, FABS b, FREL amt)
 	return a+((FABS)((b-a)*amt));
 }
 
-#define MAKE_VECTOR(_T,_N) typedef struct { _T *p; FG_UINT s; FG_UINT l; } _N; \
-  static FG_UINT Add_##_N##(_N *self, _T item) \
-  { \
-    _T *n; \
-    if(self->l==self->s) \
-    { \
-      self->s=fbnext(self->l); \
-      n = (_T##*)realloc(self->p,self->s*sizeof(_T)); \
-      self->p=n; \
-    } \
-    assert(self->l<self->s); \
-    self->p[self->l]=item; \
-    return self->l++; \
-  } \
-  static void Remove_##_N##(_N *self, FG_UINT index) \
-  { \
-    assert(index<self->l); \
-    memmove(self->p+index,self->p+index+1,((--self->l)-index)*sizeof(_T)); \
-  } \
-  static void Init_##_N##(_N *self) { memset(self,0,sizeof(_N)); } \
-  static void Destroy_##_N##(_N *self) { if(self->p!=0) free(self->p); }
+//#define MAKE_VECTOR(_T,_N) typedef struct { _T *p; FG_UINT s; FG_UINT l; } _N; \
+//  static FG_UINT Add_##_N##(_N *self, _T item) \
+//  { \
+//    _T *n; \
+//    if(self->l==self->s) \
+//    { \
+//      self->s=fbnext(self->l); \
+//      n = (_T##*)realloc(self->p,self->s*sizeof(_T)); \
+//      self->p=n; \
+//    } \
+//    assert(self->l<self->s); \
+//    self->p[self->l]=item; \
+//    return self->l++; \
+//  } \
+//  static void Remove_##_N##(_N *self, FG_UINT index) \
+//  { \
+//    assert(index<self->l); \
+//    memmove(self->p+index,self->p+index+1,((--self->l)-index)*sizeof(_T)); \
+//  } \
+//  static void Init_##_N##(_N *self) { memset(self,0,sizeof(_N)); } \
+//  static void Destroy_##_N##(_N *self) { if(self->p!=0) free(self->p); }
 
 typedef struct {
   CRect area;
@@ -117,6 +118,7 @@ typedef struct _FG_CHILD {
   struct _FG_CHILD* next;
   struct _FG_CHILD* prev;
   int order; // order relative to other windows or statics
+  fgFlag flags;
 } fgChild;
 
 
@@ -189,7 +191,7 @@ typedef struct __FG_MSG {
 
 FG_EXTERN void FG_FASTCALL fgChild_Init(fgChild* self);
 FG_EXTERN void FG_FASTCALL fgChild_Destroy(fgChild* self);
-FG_EXTERN void FG_FASTCALL fgChild_SetParent(fgChild* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent);
+FG_EXTERN void FG_FASTCALL fgChild_SetParent(fgChild* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent, fgFlag flag);
 FG_EXTERN void FG_FASTCALL fgChild_ExpandX(fgChild* self, fgElement* elem);
 FG_EXTERN void FG_FASTCALL fgChild_ExpandY(fgChild* self, fgElement* elem);
 
@@ -206,7 +208,7 @@ FG_EXTERN void FG_FASTCALL ToLongAbsRect(const AbsRect* r, long target[4]);
 FG_EXTERN char FG_FASTCALL MsgHitAbsRect(const FG_Msg* msg, const AbsRect* r);
 FG_EXTERN char FG_FASTCALL MsgHitCRect(const FG_Msg* msg, const fgChild* child);
 FG_EXTERN void FG_FASTCALL LList_Remove(fgChild* self, fgChild** root, fgChild** last);
-FG_EXTERN void FG_FASTCALL LList_Add(fgChild* self, fgChild** root, fgChild** last);
+FG_EXTERN void FG_FASTCALL LList_Add(fgChild* self, fgChild** root, fgChild** last, fgFlag flag);
 FG_EXTERN void FG_FASTCALL LList_Insert(fgChild* self, fgChild* target, fgChild** last);
 FG_EXTERN void FG_FASTCALL VirtualFreeChild(fgChild* self);
 

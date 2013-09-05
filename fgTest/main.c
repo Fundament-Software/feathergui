@@ -109,7 +109,7 @@ RETPAIR test_feathergui()
   TEST(ch.last==0);
 
   fgChild_Init(&top); // Basic inheritance test
-  fgChild_SetParent(&ch,&top);
+  fgChild_SetParent(&ch,&top,0);
   TEST(ch.next==0);
   TEST(ch.prev==0);
   TEST(ch.parent==&top);
@@ -127,14 +127,14 @@ RETPAIR test_feathergui()
   ch2.order=2;
   ch3.order=3;
 
-  fgChild_SetParent(&ch,&top);
+  fgChild_SetParent(&ch,&top,0);
   TEST(top.root==&ch);
   TEST(top.last==&ch);
-  fgChild_SetParent(&ch2,&top);
+  fgChild_SetParent(&ch2,&top,0);
   TEST(top.root==&ch2);
   TEST(top.root->next==&ch);
   TEST(top.last==&ch);
-  fgChild_SetParent(&ch3,&top);
+  fgChild_SetParent(&ch3,&top,0);
   TEST(top.root==&ch3);
   TEST(top.root->next==&ch2);
   TEST(top.root->next->next==&ch);
@@ -150,7 +150,7 @@ RETPAIR test_feathergui()
   TEST(top.root->next->next==0);
   TEST(top.last==&ch2);
 
-  fgChild_SetParent(&ch2,&ch3);
+  fgChild_SetParent(&ch2,&ch3,0);
   TEST(top.root==&ch3);
   TEST(top.root->next==0);
   TEST(top.last==&ch3);
@@ -158,15 +158,15 @@ RETPAIR test_feathergui()
   TEST(ch2.parent==&ch3);
   TEST(ch3.parent==&top);
 
-  fgChild_SetParent(&ch2,0);
+  fgChild_SetParent(&ch2,0,0);
   TEST(ch3.root==0);
   TEST(ch3.last==0);
 
   fgChild_Init(&ch);
   ch.order=1;
 
-  fgChild_SetParent(&ch2,&top);
-  fgChild_SetParent(&ch,&top);
+  fgChild_SetParent(&ch2,&top,0);
+  fgChild_SetParent(&ch,&top,0);
   TEST(top.root==&ch3);
   TEST(top.root->next==&ch2);
   TEST(top.root->next->next==&ch);
@@ -182,16 +182,16 @@ RETPAIR test_feathergui()
   fgChild_Init(&ch2);
   ch2.order=2;
 
-  fgChild_SetParent(&ch2,&top);
+  fgChild_SetParent(&ch2,&top,0);
   TEST(top.root==&ch3);
   TEST(top.root->next==&ch2);
   TEST(top.root->next->next==&ch);
   TEST(top.root->next->next->next==0);
   TEST(top.last==&ch);
 
-  fgChild_SetParent(&ch2,0);
+  fgChild_SetParent(&ch2,0,0);
   ch2.order=1;
-  fgChild_SetParent(&ch2,&top);
+  fgChild_SetParent(&ch2,&top,0);
   TEST(top.root==&ch3);
   TEST(top.root->next==&ch2); // Equal orders should be appended before the first one encountered.
   TEST(top.root->next->next==&ch);
@@ -299,8 +299,8 @@ RETPAIR test_feathergui()
   msg.y=4;
   TEST(MsgHitAbsRect(&msg,&last)==0); 
 
-  fgChild_SetParent(&ch3,&ch2);
-  fgChild_SetParent(&ch2,&ch);
+  fgChild_SetParent(&ch3,&ch2,0);
+  fgChild_SetParent(&ch2,&ch,0);
   top.element.area.left.abs=0;
   top.element.area.top.abs=1;
   top.element.area.right.abs=1;

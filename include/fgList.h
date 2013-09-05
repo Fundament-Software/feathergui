@@ -13,7 +13,7 @@ extern "C" {
 
 // A List is a list of items that can be sorted into any number of columns and optionally have column headers.
 typedef struct {
-  fgWindow window; // Buttons are directly added as children to the list.
+  fgGrid window; // Buttons are directly added as children to the list.
   fgScrollbar list; // Actual list scrollbar area. Contains one or more fgGrids and nothing else.
   fgWindow overlay; // Sizeless overlay component that lets us render highlighters and selectors over the other children
   fgStatic* selected; // Stores current selected item.
