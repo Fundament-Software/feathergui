@@ -91,6 +91,8 @@ extern "C" {
   FG_EXTERN void FG_FASTCALL WinAPIutf8to16(wchar_t** t, const char* src);
   // FG_MOVE response function
   FG_EXTERN void FG_FASTCALL WinAPI_FG_MOVE(WinAPIfgWindow* self);
+  FG_EXTERN fgStatic* FG_FASTCALL WinAPIfgText_Clone(WinAPIfgText* self);
+  FG_EXTERN fgStatic* FG_FASTCALL WinAPIfgImage_Clone(WinAPIfgImage* self);
   
   typedef struct {
     fgRoot root;

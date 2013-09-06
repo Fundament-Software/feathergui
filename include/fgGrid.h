@@ -17,6 +17,12 @@ typedef struct {
   AbsRect padding;
 } fgGrid;
 
+struct FG_GRIDSKIN {
+  struct FG_WINDOWSKIN base;
+  AbsVec margins;
+  AbsRect padding;
+};
+
 FG_EXTERN void FG_FASTCALL fgGrid_Init(fgGrid* self, fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags);
 FG_EXTERN char FG_FASTCALL fgGrid_Message(fgGrid* self, const FG_Msg* msg);
 FG_EXTERN fgChild* FG_FASTCALL fgGrid_HitElement(fgGrid* self, FABS x, FABS y);

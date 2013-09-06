@@ -56,7 +56,7 @@ fgStatic* FG_FASTCALL fgLoadVectorData(const void* data, size_t length)
 {
   return NullRenderable();
 }
-fgStatic* FG_FASTCALL fgLoadText(const char* text, unsigned int flags)
+fgStatic* FG_FASTCALL fgLoadText(const char* text, unsigned int flags, const char* font, unsigned int fontsize)
 {
   return NullRenderable();
 }

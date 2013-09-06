@@ -6,6 +6,7 @@
 void FG_FASTCALL fgButton_Init(fgButton* self, fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags)
 {
   assert(self!=0);
+  memset(self,0,sizeof(fgButton));
   fgWindow_Init(&self->window,parent,element,id,flags);
   self->window.message=&fgButton_Message;
 }
@@ -15,20 +16,16 @@ char FG_FASTCALL fgButton_Message(fgButton* self, const FG_Msg* msg)
   switch(msg->type)
   {
   case FG_MOUSEON:
-    SetSkinArray(self->skin,4,2);
+    STATIC_SET_ENABLE3(1,neutral,hover,active);
     break;
   case FG_MOUSEUP:
     if(fgFocusedWindow==(fgWindow*)self && MsgHitCRect(msg,&self->window.element)) // Does this happen while we have focus AND the event is inside our control?
       fgWindow_BasicMessage((fgWindow*)self,FG_CLICKED); // Fire off a message
   case FG_MOUSEOFF: // FG_MOUSEUP falls through
-    SetSkinArray(self->skin,4,1);
+    STATIC_SET_ENABLE3(0,neutral,hover,active);
     break;
   case FG_MOUSEDOWN:
-    SetSkinArray(self->skin,4,3);
-    break;
-  case FG_ADDSTATIC:
-    if(msg->otheraux<4)
-      DoSkinCheck((fgWindow*)self,self->skin,msg);
+    STATIC_SET_ENABLE3(2,neutral,hover,active);
     break;
   }
   return fgWindow_Message(&self->window,msg);

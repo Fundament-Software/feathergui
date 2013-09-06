@@ -11,7 +11,7 @@ void FG_FASTCALL fgRoot_Init(fgRoot* self)
   self->behaviorhook=&fgRoot_BehaviorDefault;
   self->update=&fgRoot_Update;
   self->updateroot=0;
-  self->keymsghook=0;
+  self->keymsghook=&fgRoot_KeyMsgHook;
   self->time=0;
   self->winrender=&fgRoot_WinRender;
   fgWindow_Init(&self->mouse,0,0,0,0);
@@ -94,7 +94,7 @@ char FG_FASTCALL fgRoot_BehaviorDefault(fgWindow* self, const FG_Msg* msg)
   assert(self!=0);
   return (*self->message)(self,msg);
 }
-FG_EXTERN char FG_FASTCALL fgRoot_CallBehavior(fgWindow* self, const FG_Msg* msg)
+char FG_FASTCALL fgRoot_CallBehavior(fgWindow* self, const FG_Msg* msg)
 {
   return (*fgSingleton()->behaviorhook)(self,msg);
 }
@@ -107,13 +107,17 @@ void FG_FASTCALL fgTerminate(fgRoot* root)
 void FG_FASTCALL fgRoot_RListRender(fgStatic* self, AbsRect* area)
 {
   AbsRect curarea;
-  assert(self!=0 && area!=0);
-  ResolveRectCache(&curarea,&self->element.element,area);
+  assert(area!=0);
   while(self)
   {
-    (*self->message)(self,FG_RDRAW,&curarea);
-    if(self->element.last) // Render everything backwards
-      fgRoot_RListRender((fgStatic*)self->element.last,&curarea);
+    if(!(self->element.flags&FGSTATIC_HIDDEN))
+    {
+      ResolveRectCache(&curarea,&self->element.element,area);
+      // TODO: allow children to be drawn before parent if the order is negative
+      (*self->message)(self,FG_RDRAW,&curarea,0);
+      if(self->element.last) // Render everything backwards
+        fgRoot_RListRender((fgStatic*)self->element.last,&curarea);
+    }
     self=(fgStatic*)self->element.prev;
   }
 }
@@ -137,7 +141,7 @@ void FG_FASTCALL fgRoot_WinRender(fgWindow* self, AbsRect* area)
   } 
 }
 
-FG_EXTERN void FG_FASTCALL fgRoot_Render(fgRoot* self)
+void FG_FASTCALL fgRoot_Render(fgRoot* self)
 {
   static AbsRect absarea = { 0,0,0,0 };
 
@@ -145,7 +149,7 @@ FG_EXTERN void FG_FASTCALL fgRoot_Render(fgRoot* self)
   (*self->winrender)((fgWindow*)self, &absarea);
 }
 
-FG_EXTERN void FG_FASTCALL fgRoot_Update(fgRoot* self, double delta)
+void FG_FASTCALL fgRoot_Update(fgRoot* self, double delta)
 {
   fgDeferAction* cur;
   self->time+=delta;
@@ -157,7 +161,7 @@ FG_EXTERN void FG_FASTCALL fgRoot_Update(fgRoot* self, double delta)
       free(cur);
   }
 }
-FG_EXTERN fgDeferAction* FG_FASTCALL fgRoot_AllocAction(char (FG_FASTCALL *action)(void*), void* arg, double time)
+fgDeferAction* FG_FASTCALL fgRoot_AllocAction(char (FG_FASTCALL *action)(void*), void* arg, double time)
 {
   fgDeferAction* r = (fgDeferAction*)malloc(sizeof(fgDeferAction));
   r->action=action;
@@ -167,14 +171,14 @@ FG_EXTERN fgDeferAction* FG_FASTCALL fgRoot_AllocAction(char (FG_FASTCALL *actio
   r->prev=0;
   return r;
 }
-FG_EXTERN void FG_FASTCALL fgRoot_DeallocAction(fgRoot* self, fgDeferAction* action)
+void FG_FASTCALL fgRoot_DeallocAction(fgRoot* self, fgDeferAction* action)
 {
   if(action->prev!=0 || action==self->updateroot) // If true you are in the list and must be removed
     fgRoot_RemoveAction(self,action);
   free(action);
 }
 
-FG_EXTERN void FG_FASTCALL fgRoot_AddAction(fgRoot* self, fgDeferAction* action)
+void FG_FASTCALL fgRoot_AddAction(fgRoot* self, fgDeferAction* action)
 {
   fgDeferAction* cur = self->updateroot;
   fgDeferAction* prev = 0; // Sadly the elegant pointer to pointer method doesn't work for doubly linked lists.
@@ -190,7 +194,7 @@ FG_EXTERN void FG_FASTCALL fgRoot_AddAction(fgRoot* self, fgDeferAction* action)
   else self->updateroot=action; // Prev is only null if we're inserting before the root, which means we must reassign the root.
   if(cur) cur->prev=action; // Cur is null if we are at the end of the list.
 }
-FG_EXTERN void FG_FASTCALL fgRoot_RemoveAction(fgRoot* self, fgDeferAction* action)
+void FG_FASTCALL fgRoot_RemoveAction(fgRoot* self, fgDeferAction* action)
 {
   assert(action!=0 && (action->prev!=0 || action==self->updateroot));
 	if(action->prev != 0) action->prev->next = action->next;
@@ -199,7 +203,7 @@ FG_EXTERN void FG_FASTCALL fgRoot_RemoveAction(fgRoot* self, fgDeferAction* acti
   action->next=0; // We do this so its never ambigious if an action is in the list already or not
   action->prev=0;
 }
-FG_EXTERN void FG_FASTCALL fgRoot_ModifyAction(fgRoot* self, fgDeferAction* action)
+void FG_FASTCALL fgRoot_ModifyAction(fgRoot* self, fgDeferAction* action)
 {
   if((action->next!=0 && action->next->time<action->time) || (action->prev!=0 && action->prev->time>action->time))
   {
@@ -208,4 +212,8 @@ FG_EXTERN void FG_FASTCALL fgRoot_ModifyAction(fgRoot* self, fgDeferAction* acti
   }
   else if(!action->prev && action!=self->updateroot) // If true you aren't in the list so we need to add you
     fgRoot_AddAction(self,action);
+}
+char FG_FASTCALL fgRoot_KeyMsgHook(const FG_Msg* msg)
+{
+  return 1;
 }

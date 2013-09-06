@@ -44,6 +44,7 @@ typedef struct {
   FREL rel;
 } Coord;
 
+#define T_SETBIT(w,b,f) (((w) & (~(b))) | ((-(char)f) & (b)))
 #define MAKE_VEC(_T,_N) typedef struct { _T x; _T y; } _N
 
 MAKE_VEC(FREL,RelVec);
@@ -149,13 +150,14 @@ enum FG_MSGTYPE
   FG_ADDITEM, // Used for anything involving items (menus, lists, etc)
   FG_ADDSUBMENU,
   FG_ADDCHILD, // Pass an FG_Msg with this type and set the other pointer to the child that should be added. Must be an fgWindow* pointer.
-  FG_ADDSTATIC, // Send a fgStatic in other with an optional ID for its skin index in otheraux.
+  FG_ADDSTATIC, // Send a fgStatic in other with an optional ID in otheraux that can optionally be used to signify special behavior
   FG_REMOVESTATIC,
   FG_REMOVECHILD,
   FG_REMOVEITEM,
   FG_SHOW, // Send an otherint equal to 0 to hide, otherwise its made visible
   FG_CLICKED, // Used for several controls to signify the user making a valid click (fgButton, fgCombobox, etc.)
   FG_DESTROY, // Represents a request for the window to be destroyed. This request can be ignored, so it should not be used as a destructor.
+  FG_APPLYSKIN,
   FG_CUSTOMEVENT
 };
 
@@ -170,16 +172,14 @@ enum FG_MOUSEBUTTON // Used in FG_Msg.button and FG_Msg.allbtn
 
 // General message structure which contains the message type and then various kinds of information depending on the type.
 typedef struct __FG_MSG {
-  unsigned char type;
-
   union {
     struct { int x; int y; unsigned char button; unsigned char allbtn; }; // Mouse events
     struct { short scrolldelta; }; // Mouse scroll
     struct {  // Keys
+        int keychar; //Only used by KEYCHAR, represents a utf32 character
         unsigned char keycode; //only used by KEYDOWN/KEYUP, represents an actual keycode, not a character
         char keydown;
         char sigkeys;
-        int keychar; //Only used by KEYCHAR, represents a utf32 character
     };
     struct { float joyvalue; short joyaxis; }; // JOYAXIS
     struct { char joydown; short joybutton; }; // JOYBUTTON
@@ -187,6 +187,7 @@ typedef struct __FG_MSG {
     struct { void* other1; void* other2; }; // Used by anything requiring 2 pointers, possibly for a return value.
     struct { int otherint; int otherintaux; }; // Used by any generic message that want an int (FG_SETCLIP, FG_SETCENTERED, etc.)
   };
+  unsigned char type;
 } FG_Msg;
 
 FG_EXTERN void FG_FASTCALL fgChild_Init(fgChild* self);

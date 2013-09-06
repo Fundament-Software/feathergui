@@ -15,7 +15,7 @@ void FG_FASTCALL fgMenu_Init(fgMenu* self, fgWindow* parent, const fgElement* el
   self->window.element.destroy=&fgMenu_Destroy;
   self->dropdown=fgRoot_AllocAction(&fgMenu_DoDropdown,0,0);
   fgGrid_Init(&self->grid,(fgWindow*)self,element,id,flags);
-  fgWindow_Init(&self->overlay,(fgWindow*)self,0,0,0);
+  //fgWindow_Init(&self->overlay,(fgWindow*)self,0,0,0);
   self->expanded=0;
   msg.type=FG_SETFLAG;
   msg.otherint=FGWIN_NOCLIP;
@@ -25,7 +25,7 @@ void FG_FASTCALL fgMenu_Init(fgMenu* self, fgWindow* parent, const fgElement* el
 void FG_FASTCALL fgMenu_Destroy(fgMenu* self)
 {
   fgRoot_DeallocAction(fgSingleton(),self->dropdown);
-  fgWindow_Destroy(&self->overlay);
+  //fgWindow_Destroy(&self->overlay);
   fgWindow_Destroy((fgWindow*)&self->grid);
   fgWindow_Destroy(&self->window);
 }
@@ -43,22 +43,22 @@ char FG_FASTCALL fgMenu_Message(fgMenu* self, const FG_Msg* msg)
     if(self->expanded!=0) break;
     curtime = clock()/(CLOCKS_PER_SEC/1000);
     item=(struct FG_MENUITEM*)fgGrid_HitElement(&self->grid,msg->x,msg->y);
-    if(!item || item->submenu==(void*)-1) // if it didn't hit anything, or it hit a divider, hide skin[1]
-      (*self->skin[1]->message)(self->skin[1],FG_RSHOW,0);
-    else if(self->dropdown->arg!=item) // Otherwise reposition skin[1] properly, if position actually changed
+    if(!item || item->submenu==(void*)-1) // if it didn't hit anything, or it hit a divider, hide highlight
+      (*self->highlight->message)(self->highlight,FG_RSHOW,0,0);
+    else if(self->dropdown->arg!=item) // Otherwise reposition highlight properly, if position actually changed
     {
       self->dropdown->arg=item;
       self->dropdown->time=fgSingleton()->time+DROPDOWN_TIME;
       fgRoot_ModifyAction(fgSingleton(),self->dropdown);
       loc.y=item->render.element.element.area.top.abs; // This works because the parent's the same, so both locations are relative to the same thing.
-      MoveCRect(&loc,&self->skin[1]->element.element.area);
-      (*self->skin[1]->message)(self->skin[1],FG_MOVE,0);
-      (*self->skin[1]->message)(self->skin[1],FG_RSHOW,(void*)1);
+      MoveCRect(&loc,&self->highlight->element.element.area);
+      (*self->highlight->message)(self->highlight,FG_MOVE,0,0);
+      (*self->highlight->message)(self->highlight,FG_RSHOW,(void*)1,0);
     }
     break;
   case FG_MOUSEOFF:
     if(self->expanded!=0) break;
-    (*self->skin[1]->message)(self->skin[1],FG_RSHOW,0);
+    (*self->highlight->message)(self->highlight,FG_RSHOW,0,0);
     break;
   case FG_ADDITEM:
     return 0;
@@ -67,10 +67,6 @@ char FG_FASTCALL fgMenu_Message(fgMenu* self, const FG_Msg* msg)
     break;
   case FG_LOSTFOCUS:
     fgWindow_IntMessage((fgWindow*)self,FG_SHOW,0);
-    break;
-  case FG_ADDSTATIC:
-    if(msg->otheraux<4)
-      DoSkinCheck((fgWindow*)self,self->skin,msg);
     break;
   }
   return fgWindow_Message((fgWindow*)self,msg);

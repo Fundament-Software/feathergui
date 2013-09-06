@@ -40,8 +40,8 @@ void FG_FASTCALL ResolveRect(const fgChild* self, AbsRect* out)
   out->right += lerp(last.left,last.right,v->right.rel);
   out->bottom += lerp(last.top,last.bottom,v->bottom.rel);
   
-  center.x += (last.right-last.left)*self->element.center.x.rel;
-  center.y += (last.bottom-last.top)*self->element.center.y.rel;
+  center.x += (v->right.abs-v->left.abs)*self->element.center.x.rel;
+  center.y += (v->bottom.abs-v->top.abs)*self->element.center.y.rel;
   //center = ResolveVec(&,r); // We can't use this because the center is relative to the DIMENSIONS, not the actual position.
   out->left -= center.x;
   out->top -= center.y;
@@ -59,8 +59,8 @@ void FG_FASTCALL ResolveRectCache(AbsRect* BSS_RESTRICT r, const fgElement* elem
   r->right = lerp(last->left,last->right,v->right.rel)+v->right.abs;
   r->bottom = lerp(last->top,last->bottom,v->bottom.rel)+v->bottom.abs;
   
-  center.x += (last->right-last->left)*elem->center.x.rel;
-  center.y += (last->bottom-last->top)*elem->center.y.rel;
+  center.x += (v->right.abs-v->left.abs)*elem->center.x.rel;
+  center.y += (v->bottom.abs-v->top.abs)*elem->center.y.rel;
   //center = ResolveVec(&,r); // We can't use this because the center is relative to the DIMENSIONS, not the actual position.
   r->left -= center.x;
   r->top -= center.y;

@@ -38,6 +38,11 @@ typedef struct __WINDOW {
   void* userdata;
 } fgWindow;
 
+struct FG_WINDOWSKIN {
+  fgStatic* root; // Holds all statics that should be added to a window and have no logic associated with them.
+  fgStatic* last;
+};
+
 FG_EXTERN fgWindow* fgFocusedWindow;
 FG_EXTERN fgWindow* fgLastHover; // Last window the mouse moved over, used to generate MOUSEON and MOUSEOFF events
 
@@ -50,7 +55,6 @@ FG_EXTERN char FG_FASTCALL fgWindow_BasicMessage(fgWindow* self, unsigned char t
 FG_EXTERN char FG_FASTCALL fgWindow_VoidMessage(fgWindow* self, unsigned char type, void* data); // Shortcut for sending void* messages
 FG_EXTERN char FG_FASTCALL fgWindow_IntMessage(fgWindow* self, unsigned char type, int data); // Shortcut for sending int messages
 FG_EXTERN void FG_FASTCALL fgWindow_SetParent(fgWindow* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent);
-FG_EXTERN void FG_FASTCALL DoSkinCheck(fgWindow* self, fgStatic** skins, const FG_Msg* msg);
 
 #ifdef  __cplusplus
 }

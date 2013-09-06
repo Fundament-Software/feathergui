@@ -33,7 +33,6 @@ void FG_FASTCALL fgWindow_Destroy(fgWindow* self)
 char FG_FASTCALL fgWindow_Message(fgWindow* self, const FG_Msg* msg)
 {
   //FG_Msg aux;
-  FG_UINT i;
   char flip,flag,active;
   fgChild* hold;
   assert(self!=0);
@@ -130,6 +129,20 @@ char FG_FASTCALL fgWindow_Message(fgWindow* self, const FG_Msg* msg)
     if(!msg->other && self->element.parent!=0) // If it's internal, we always propagate it if we have a parent.
       fgWindow_VoidMessage((fgWindow*)self->element.parent,FG_MOVE,self);
     break;
+  case FG_APPLYSKIN:
+    if(msg->other!=0)
+    {
+      fgStatic* cur=((struct FG_WINDOWSKIN*)msg->other)->root;
+      FG_Msg aux = {0};
+      aux.type=FG_ADDSTATIC;
+      while(cur)
+      {
+        aux.other=(*cur->clone)(cur);
+        (*fgSingleton()->behaviorhook)(self,&aux);
+        cur=(fgStatic*)cur->element.next;
+      }
+    }
+    break;
   case FG_DESTROY:
     VirtualFreeChild((fgChild*)self);
     break;
@@ -192,12 +205,12 @@ void FG_FASTCALL fgWindow_SetParent(fgWindow* BSS_RESTRICT self, fgChild* BSS_RE
   fgWindow_BasicMessage(self,FG_MOVE);
 }
 
-void FG_FASTCALL DoSkinCheck(fgWindow* self, fgStatic** skins, const FG_Msg* msg)
-{
-  if(skins[msg->otheraux]!=0)
-    fgWindow_VoidMessage(self,FG_REMOVESTATIC,skins[msg->otheraux]);
-  skins[msg->otheraux]=(fgStatic*)msg->other;
-}
+//void FG_FASTCALL DoSkinCheck(fgWindow* self, fgStatic** skins, const FG_Msg* msg)
+//{
+//  if(skins[msg->otheraux]!=0)
+//    fgWindow_VoidMessage(self,FG_REMOVESTATIC,skins[msg->otheraux]);
+//  skins[msg->otheraux]=(fgStatic*)msg->other;
+//}
 
 
       /*if(active && flip!=0) // Enable clipping, remove from nonclipping array

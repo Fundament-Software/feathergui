@@ -6,11 +6,10 @@
 void FG_FASTCALL fgStatic_Init(fgStatic* self)
 { 
   assert(self!=0); 
+  memset(self,0,sizeof(fgStatic));
   fgChild_Init(&self->element); 
   self->message=&fgStatic_Message; 
   self->element.destroy=&fgStatic_Destroy; 
-  self->parent=0;
-  self->element.flags=0;
 }
 
 void FG_FASTCALL fgStatic_Destroy(fgStatic* self)
@@ -37,10 +36,10 @@ void FG_FASTCALL fgStatic_NotifyParent(fgStatic* self)
   if(self->parent!=0 && (&self->parent->element)==self->element.parent) // Notify parent window of removal
     fgWindow_VoidMessage(self->parent,FG_REMOVESTATIC,self);
   else if(self->element.parent!=0) // Otherwise notify parent static of removal
-    (*((fgStatic*)self->element.parent)->message)((fgStatic*)self->element.parent,FG_RREMOVECHILD,self);
+    (*((fgStatic*)self->element.parent)->message)((fgStatic*)self->element.parent,FG_RREMOVECHILD,self,0);
   assert(self->element.parent==0);
 }
-void FG_FASTCALL fgStatic_Message(fgStatic* self, unsigned char type, void* arg)
+void FG_FASTCALL fgStatic_Message(fgStatic* self, unsigned char type, void* arg, int other)
 {
   assert(self!=0);
 
@@ -56,11 +55,11 @@ void FG_FASTCALL fgStatic_Message(fgStatic* self, unsigned char type, void* arg)
     break;
   case FG_RSETAREA:
     memcpy(&self->element.element.area,arg,sizeof(CRect));
-    (self->message)(self,FG_RMOVE,0);
+    (self->message)(self,FG_RMOVE,0,0);
     break;
   case FG_RSETELEMENT:
     memcpy(&self->element.element,arg,sizeof(fgElement));
-    (self->message)(self,FG_RMOVE,0);
+    (self->message)(self,FG_RMOVE,0,0);
     break;
   case FG_RSETORDER:
     self->element.order=(FG_UINT)arg;
@@ -73,13 +72,12 @@ void FG_FASTCALL fgStatic_Message(fgStatic* self, unsigned char type, void* arg)
   case FG_RSETFLAGS:
     self->element.flags=(fgFlag)arg;
     break;
-  case FG_RCLONE:
-    assert(arg!=0);
-    fgStatic_Clone(arg,self);  
-    break;
   case FG_RMOVE:
     if(self->parent!=0 && (&self->parent->element)==self->element.parent) // If our parent is a window, pass it an FG_MOVE message
       fgWindow_VoidMessage(self->parent,FG_MOVE,self);
+    break;
+  case FG_RSHOW:
+    self->element.flags=T_SETBIT(self->element.flags,FGSTATIC_HIDDEN,!((char)arg));
     break;
   }
 }
@@ -87,32 +85,8 @@ void FG_FASTCALL fgStatic_Message(fgStatic* self, unsigned char type, void* arg)
 void FG_FASTCALL fgStatic_SetParent(fgStatic* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent)
 {
   fgChild_SetParent((fgChild*)self,parent,0);
-  (self->message)(self,FG_RMOVE,0);
+  (self->message)(self,FG_RMOVE,0,0);
 }
-
-//void FG_FASTCALL fgStatic_MessageEmpty(fgStatic* self, unsigned char type, void* arg)
-//{
-//  assert(self!=0);
-//
-//  fgStatic_Message(self,type,arg);
-//
-//  switch(type)
-//  {
-//  case FG_RADDCHILD:
-//  case FG_RREMOVECHILD:
-//  case FG_RMOVE:
-//    if(self->element.flags&(FGWIN_EXPANDX|FGWIN_EXPANDY)) // Should we expand?
-//    {
-//      if(self->element.flags&FGSTATIC_EXPANDX) fgChild_ExpandX((fgChild*)self,arg);
-//      if(self->element.flags&FGSTATIC_EXPANDY) fgChild_ExpandY((fgChild*)self,arg);
-//      if(self->parent!=0 && (&self->parent->element)==self->element.parent) // If our parent is a window, pass it an FG_MOVE message
-//        fgWindow_VoidMessage(self->parent,FG_MOVE,self);
-//      else if(self->element.parent!=0) // Otherwise if our parent exists, its an fgStatic, so pass it an FG_RMOVE message.
-//        (*((fgStatic*)self->element.parent)->message)((fgStatic*)self->element.parent,FG_RMOVE,self);
-//    }*/
-//    break;
-//  }
-//}
 
 void FG_FASTCALL fgStatic_SetWindow(fgStatic* self, struct __WINDOW* window)
 {
@@ -124,7 +98,6 @@ void FG_FASTCALL fgStatic_SetWindow(fgStatic* self, struct __WINDOW* window)
     cur=cur->next;
   }
 }
-
 void FG_FASTCALL fgStatic_Clone(fgStatic* self, fgStatic* from)
 {
   fgChild* cur=from->element.root;
@@ -135,20 +108,20 @@ void FG_FASTCALL fgStatic_Clone(fgStatic* self, fgStatic* from)
 
   while(cur)
   {
-    (*self->message)(self,FG_RADDCHILD,(*((fgStatic*)cur)->clone)((fgStatic*)cur));
+    (*self->message)(self,FG_RADDCHILD,(*((fgStatic*)cur)->clone)((fgStatic*)cur),0);
     cur=cur->next;
   }
 }
 
-void FG_FASTCALL SetSkinArray(fgStatic** pp, unsigned char size, unsigned char index)
-{
-  unsigned char i;
-  assert(pp!=0);
-  for(i = 0; i < size; ++i)
-    if(pp[i])
-      (*pp[i]->message)(pp[i],FG_RSHOW,0);
-  
-  if(pp[index])
-    (*pp[index]->message)(pp[index],FG_RSHOW,(void*)1);
-}
-
+//void FG_FASTCALL SetSkinArray(fgStatic** pp, unsigned char size, unsigned char index)
+//{
+//  unsigned char i;
+//  assert(pp!=0);
+//  for(i = 0; i < size; ++i)
+//    if(pp[i])
+//      (*pp[i]->message)(pp[i],FG_RSHOW,0);
+//  
+//  if(pp[index])
+//    (*pp[index]->message)(pp[index],FG_RSHOW,(void*)1);
+//}
+//

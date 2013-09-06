@@ -15,10 +15,17 @@ extern "C" {
 typedef struct {
   fgGrid window; // Buttons are directly added as children to the list.
   fgScrollbar list; // Actual list scrollbar area. Contains one or more fgGrids and nothing else.
-  fgWindow overlay; // Sizeless overlay component that lets us render highlighters and selectors over the other children
   fgStatic* selected; // Stores current selected item.
-  fgStatic* skin[3]; // index 0 is the background to the list, 1 is the highlighter, 2 is the selector
+  fgStatic* selector;
+  fgStatic* highlighter;
 } fgList;
+
+struct FG_LISTSKIN {
+  struct FG_GRIDSKIN base;
+  fgStatic* selected; // Stores current selected item.
+  fgStatic* selector;
+  fgStatic* highlighter;
+};
 
 FG_EXTERN fgWindow* FG_FASTCALL fgList_Create(fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags);
 FG_EXTERN void FG_FASTCALL fgList_Init(fgList* self, fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags);
