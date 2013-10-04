@@ -1,8 +1,13 @@
-package GUI;
+package Feather;
 
 message Coord {
   optional float abs = 1;
   optional float rel = 2;
+}
+
+message Vec {
+  required Coord x = 1;
+  required Coord y = 2;
 }
 
 message Rect {
@@ -15,48 +20,21 @@ message Rect {
 message Element {
   required Rect area = 1;
   optional float rotation = 2; // Implementations are not required to support rotation.
-  optional Coord center = 3;
+  optional Vec center = 3;
+}
+
+message Child {
+  required Element element = 1;
+  optional int32 order = 2;
+  optional uint32 flags = 3;
+  repeated uint32 statics = 4 [packed=true]; // These are REFERENCES to static ID's, so even children of other statics can re-use static definitions.
 }
 
 message Window {
-  required Element element = 1;
-  optional uint32 id = 3;
-  optional uint32 order = 4;
-  optional uint32 flags = 5;
-  optional Widget contextmenu = 6;
-  repeated Widget children = 7;
-  repeated uint32 static = 8 [packed=true]; // This is a REFERENCE to a static's id, so windows can re-use definitions
-}
-
-// Lists all possible widget types. If you build your own type, you can safely add it here thanks to protobuf versioning
-message Widget {
-  enum CLASSID {
-    REGION = 0;
-    WINDOW = 1;
-    BUTTON = 2;
-    CHECKBOX = 3;
-    COMBOBOX = 4;
-    CONTAINER = 5;
-    GRID = 6;
-    LIST = 7;
-    MENU = 8;
-    PROGRESSBAR = 9;
-    SCROLLBAR = 10;
-    SLIDER = 11;
-    TEXTBOX = 12;
-    TOOLBAR = 13;
-    TOPWINDOW = 14;
-    TREE = 15;
-  }
-  optional CLASSID classid = 1;
-  optional Window window = 2;
-  optional Checkbox checkbox = 3;
-  optional Container container = 4;
-  optional Grid grid = 5;
-  optional List list = 6;
-  optional Slider slider = 7;
-  optional TopWindow topwindow = 8;
-  optional Tree tree = 9;
+  required Child element = 1;
+  optional uint32 id = 2;
+  optional uint32 contextmenu = 3;
+  repeated uint32 children = 4 [packed=true]; // These are IDs of various widgets. They MUST be widget IDs, not static IDs.
 }
 
 message Data { // This defines anything that can either be a relative or absolute filepath, or embedded as bytes in the file.
@@ -65,10 +43,8 @@ message Data { // This defines anything that can either be a relative or absolut
 }
 
 message Static {
-  required Element element = 1;
-  optional uint32 order = 2;
-  optional uint32 id = 3; // Optional ID unique to all statics for a GUI element tree. Used by windows to find Static definitions, therefore allowing them to be reused.
-  optional Data data = 4;
+  required Child element = 1;
+  optional Data data = 2;
   enum DATATYPE {
     IMAGE = 0;
     TEXT = 1;
@@ -76,19 +52,22 @@ message Static {
     LINE = 3;
     RECT = 4;
   }
-  optional DATATYPE type = 5;
-  repeated Static children = 6;
-}
-
-message Checkbox {
-  required Window window = 1;
-}
-
-message Container {
-  required Window window = 1;
+  optional DATATYPE type = 3;
 }
 
 message Grid {
+  required Window window = 1;
+}
+
+message Scrollbar {
+  required Window window = 1;
+}
+
+message Button {
+  required Window window = 1;
+}
+
+message Combobox {
   required Window window = 1;
 }
 
@@ -96,11 +75,35 @@ message List {
   required Window window = 1;
 }
 
-message Slider {
+message Menu {
+  required Window window = 1;
+}
+
+message TabGroup {
+  required Window window = 1;
+}
+
+message Textbox {
   required Window window = 1;
 }
 
 message TopWindow {
+  required Window window = 1;
+}
+
+message Checkbox {
+  required Window window = 1;
+}
+
+message Slider {
+  required Window window = 1;
+}
+
+message ProgressBar {
+  required Window window = 1;
+}
+
+message Toolbar {
   required Window window = 1;
 }
 

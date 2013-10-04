@@ -10,9 +10,10 @@
 extern "C" {
 #endif
 
-// A grid arranges statics according to a tiling and margin system.
+// A grid tiles fgChild elements. ADDITEM is used to add them, where otheraux specifies the insertion index. Pass -1 to append to the end.
 typedef struct {
   fgWindow window; // Note that the window flags consider 16 to be tile on x-axis, 32 to tile on y-axis, 48 both.
+  fgVector items; // vector of fgChild* pointers.
   AbsVec margins;
   AbsRect padding;
 } fgGrid;

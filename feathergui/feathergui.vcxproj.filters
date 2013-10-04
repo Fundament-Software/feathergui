@@ -29,9 +29,6 @@
     <ClInclude Include="..\include\fgButton.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\fgContainer.h">
-      <Filter>include</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\fgTopWindow.h">
       <Filter>include</Filter>
     </ClInclude>
@@ -71,9 +68,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="fgButton.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="fgContainer.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="fgMenu.c">

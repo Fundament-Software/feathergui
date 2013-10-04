@@ -14,12 +14,13 @@ extern "C" {
 // A Menu is either a window menu or a context menu. Turns into a menubar if made the child of a top-level window
 typedef struct FG_MENU {
   fgWindow window; 
-  fgGrid grid; // This grid is a child of this menu's window and contains 3 other grids for each column, plus one for submenus
+  fgGrid grid[5]; // One grid as a child of this menu, 4 grids that are children of it (image, text, shortcut, submenus)
   struct FG_MENU* expanded; // Stores the current item that has an expanded submenu, if any exist.
   fgStatic* highlight;
   fgStatic* seperator;
   fgStatic* arrow;
   fgDeferAction* dropdown; // Keeps track of our dropdown action in fgRoot
+  fgTextDef def; 
 } fgMenu;
 
 struct FG_MENUITEM {

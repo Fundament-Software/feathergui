@@ -43,7 +43,7 @@ void FG_FASTCALL WinAPIfgText_Message(fgStatic* self, unsigned char type, void* 
   fgStatic_Message(self,type,arg,other);
 }
 
-fgStatic* FG_FASTCALL fgLoadText(const char* text, unsigned int flags)
+fgStatic* FG_FASTCALL fgLoadText(const char* text, fgFlag flags, const char* font, unsigned int fontsize)
 {
   size_t len=strlen(text)+1;
   char* str=(char*)malloc(len);

@@ -2,65 +2,49 @@
 // For conditions of distribution and use, see copyright notice in "feathergui.h"
 
 #include "fgSkin.h"
-#include "fgRoot.h"
-/*
-void FG_FASTCALL fgSkinSet_Init(fgSkinSet* self)
+#include "khash.h" // Note: minor change made in khash.h to define __kh_##name##_t so the struct isn't unnamed
+
+KHASH_MAP_INIT_STRINS(skin, struct FG_WINDOWSKIN*);
+
+FG_EXTERN kh_skin_t* FG_FASTCALL fgSkin_Create()
 {
-  self->hash=kh_init(skin);
-  self->strhash=kh_init(strskin);
+  return kh_init_skin();
 }
-void FG_FASTCALL fgSkinSet_Destroy(fgSkinSet* self)
+FG_EXTERN void FG_FASTCALL fgSkin_Destroy(kh_skin_t* self)
 {
-  struct FG_WINDOWSKIN* hold;
-  struct FG_WINDOWSKIN* cur=self->root;
-  kh_destroy(skin,self->hash);
-  kh_destroy(strskin,self->strhash);
-  while(cur=self->root)
-  {
-    hold=cur;
-    cur=cur->next;
-    fgSkin_Destroy(hold);
-    free(hold);
-  }
+  kh_destroy_skin(self);
 }
 
-void FG_FASTCALL fgSkinSet_Add(fgSkinSet* self, khint32_t id, const char* name)
+FG_EXTERN void FG_FASTCALL fgSkin_Insert(kh_skin_t* self, struct FG_WINDOWSKIN* skin, const char* id)
 {
-  int r;
-  struct FG_WINDOWSKIN* pskin=(struct FG_WINDOWSKIN*)malloc(sizeof(struct FG_WINDOWSKIN*));
-  khiter_t iter = kh_put(skin,self->hash,id,&r);
-  khiter_t striter = kh_put(strskin,self->strhash,name,&r);
-  kh_value(self->hash, iter) = pskin;
-  kh_value(self->strhash, striter) = pskin;
-  pskin->root=0;
-  pskin->last=0;
-  pskin->next=self->root;
-  self->root=pskin;
+  int ret;
+  kh_put_skin(self,id,&ret);
+  kh_val(self,kh_get_skin(self,id))=skin;
 }
-struct FG_WINDOWSKIN* FG_FASTCALL fgSkinSet_Get(fgSkinSet* self, khint32_t id)
+FG_EXTERN struct FG_WINDOWSKIN* FG_FASTCALL fgSkin_Get(kh_skin_t* self, const char* id)
 {
-  khiter_t iter = kh_get(skin,self->hash,id);
-  if(iter==kh_end(self->hash)) return 0;
-  return kh_value(self->hash,iter);
+  khint_t i;
+  if(!self || !id) return 0;
+  i = kh_get_skin(self,id);
+  if(i == kh_end(self)) return 0;
+  return kh_val(self,i);
 }
-struct FG_WINDOWSKIN* FG_FASTCALL fgSkinSet_GetStr(fgSkinSet* self, const char* name)
+FG_EXTERN struct FG_WINDOWSKIN* FG_FASTCALL fgSkin_Remove(kh_skin_t* self, const char* id)
 {
-  khiter_t iter = kh_get(strskin,self->strhash,name);
-  if(iter==kh_end(self->strhash)) return 0;
-  return kh_value(self->strhash,iter);
+  struct FG_WINDOWSKIN* r;
+  khint_t i;
+  if(!self || !id) return 0;
+  i = kh_get_skin(self,id);
+  if(i==kh_end(self)) return 0;
+  r = kh_val(self,i);
+  kh_del_skin(self,i);
+  return r;
 }
-void FG_FASTCALL fgSkin_Destroy(struct FG_WINDOWSKIN* self)
+FG_EXTERN char FG_FASTCALL fgSkin_Apply(kh_skin_t* self, fgWindow* p)
 {
-  fgStatic* cur;
-  while(cur=self->root)
-  {
-    self->root=(fgStatic*)cur->element.next;
-    VirtualFreeChild((fgChild*)cur);
-  }
+  const char* name=0;
+  if(!self || !p) return 1;
+  fgWindow_VoidMessage(p,FG_GETCLASSNAME,&name);
+  if(!name) return 1;
+  return fgWindow_VoidMessage(p,FG_APPLYSKIN,fgSkin_Get(self,name));
 }
-void FG_FASTCALL fgSkin_Add(struct FG_WINDOWSKIN* self, fgStatic* stat)
-{
-  LList_Add((fgChild*)stat,(fgChild**)&self->root,(fgChild**)&self->last,0);
-  stat->parent=0;
-  stat->element.parent=0;
-}*/

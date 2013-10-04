@@ -10,8 +10,7 @@
 extern "C" {
 #endif
 
-// A button is usually implemented as a simple background design, plus a centering GUI component that takes a static and
-// displays it in the center of the button.
+// A button is usually implemented as a simple background design that takes a static and displays it in the center of the button.
 typedef struct _FG_BUTTON {
   fgWindow window;
   fgStatic* item; // item displayed in button
@@ -24,7 +23,8 @@ struct FG_BUTTONSKIN {
   struct FG_WINDOWSKIN base;
   fgStatic* nuetral; // normal background for when button isn't in hover or active (being clicked) state
   fgStatic* hover; // background for hovering
-  fgStatic* active;
+  fgStatic* active; // background while being clicked
+  fgTextDef def; // This is how the text is displayed when it's set using FG_SETCAPTION instead of FG_ADDITEM
 };
 
 FG_EXTERN fgWindow* FG_FASTCALL fgButton_Create(fgStatic* item, fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags);

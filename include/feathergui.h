@@ -29,7 +29,7 @@ extern "C" {
 
 typedef float FREL; // Change this to double for double precision (why on earth you would need that for a GUI, however, is beyond me)
 typedef float FABS; // We seperate both of these types because then you don't have to guess if a float is relative or absolute
-typedef unsigned int FG_UINT;
+typedef unsigned int FG_UINT; 
 typedef unsigned short fgFlag;
 
 #define FGUI_VERSION_MAJOR 0
@@ -81,27 +81,21 @@ static BSS_FORCEINLINE FABS FG_FASTCALL lerp(FABS a, FABS b, FREL amt)
 	return a+((FABS)((b-a)*amt));
 }
 
-//#define MAKE_VECTOR(_T,_N) typedef struct { _T *p; FG_UINT s; FG_UINT l; } _N; \
-//  static FG_UINT Add_##_N##(_N *self, _T item) \
-//  { \
-//    _T *n; \
-//    if(self->l==self->s) \
-//    { \
-//      self->s=fbnext(self->l); \
-//      n = (_T##*)realloc(self->p,self->s*sizeof(_T)); \
-//      self->p=n; \
-//    } \
-//    assert(self->l<self->s); \
-//    self->p[self->l]=item; \
-//    return self->l++; \
-//  } \
-//  static void Remove_##_N##(_N *self, FG_UINT index) \
-//  { \
-//    assert(index<self->l); \
-//    memmove(self->p+index,self->p+index+1,((--self->l)-index)*sizeof(_T)); \
-//  } \
-//  static void Init_##_N##(_N *self) { memset(self,0,sizeof(_N)); } \
-//  static void Destroy_##_N##(_N *self) { if(self->p!=0) free(self->p); }
+typedef struct __VECTOR {
+  void* p;
+  FG_UINT s; // This is the total size of the array in BYTES.
+  FG_UINT l; // This is how much of the array is being used in ELEMENTS.
+} fgVector;
+
+FG_EXTERN void FG_FASTCALL fgVector_Init(fgVector* self); // Zeros everything
+FG_EXTERN void FG_FASTCALL fgVector_Destroy(fgVector* self);
+FG_EXTERN void FG_FASTCALL fgVector_SetSize(fgVector* self, FG_UINT length, FG_UINT size); // Grows or shrinks the array. self->l is shrunk if necessary.
+FG_EXTERN void FG_FASTCALL fgVector_CheckSize(fgVector* self, FG_UINT size); // Ensures the vector is large enough to hold at least one more item.
+FG_EXTERN void FG_FASTCALL fgVector_Remove(fgVector* self, FG_UINT index, FG_UINT size); // Removes element at the given index.
+
+#define fgVector_Add(self, item, TYPE) fgVector_CheckSize(self,sizeof(TYPE)); ((TYPE*)self->p)[self->l++]=item;
+#define fgVector_Insert(self, item, index, TYPE) fgVector_CheckSize(self,sizeof(TYPE)); memmove(((TYPE*)self->p)+(index+1)),((TYPE*)self->p)+index,((self->l++)-index)*size); ((TYPE*)self->p)[index]=item;
+#define fgVector_Get(self, index, TYPE) ((TYPE*)self->p)[index]
 
 typedef struct {
   CRect area;
@@ -147,6 +141,8 @@ enum FG_MSGTYPE
   FG_SETORDER, // Sets the order of a window
   FG_SETCAPTION, 
   FG_SETALPHA, // Used so an entire widget can be made to fade in or out.
+  FG_GETCLASSNAME, // Returns a unique string identifier for the class
+  FG_GETITEM,
   FG_ADDITEM, // Used for anything involving items (menus, lists, etc)
   FG_ADDSUBMENU,
   FG_ADDCHILD, // Pass an FG_Msg with this type and set the other pointer to the child that should be added. Must be an fgWindow* pointer.
@@ -155,7 +151,10 @@ enum FG_MSGTYPE
   FG_REMOVECHILD,
   FG_REMOVEITEM,
   FG_SHOW, // Send an otherint equal to 0 to hide, otherwise its made visible
-  FG_CLICKED, // Used for several controls to signify the user making a valid click (fgButton, fgCombobox, etc.)
+  FG_NUETRAL, // Sent when a button or other hover-enabled control switches to it's nuetral state
+  FG_HOVER, // Sent when a hover-enabled control switches to its hover state
+  FG_ACTIVE, // Sent when a hover-enabled control switches to its active state
+  FG_CLICKED, // Sent when a hover-enabled control recieves a valid click event (a MOUSEUP inside the control while it has focus)
   FG_DESTROY, // Represents a request for the window to be destroyed. This request can be ignored, so it should not be used as a destructor.
   FG_APPLYSKIN,
   FG_CUSTOMEVENT
@@ -201,7 +200,7 @@ FG_EXTERN void FG_FASTCALL ResolveRect(const fgChild* self, AbsRect* out);
 FG_EXTERN void FG_FASTCALL ResolveRectCache(AbsRect* BSS_RESTRICT r, const fgElement* elem, const AbsRect* BSS_RESTRICT last);
 FG_EXTERN char FG_FASTCALL CompareCRects(const CRect* l, const CRect* r); // Returns 0 if both are the same or 1 otherwise
 FG_EXTERN char FG_FASTCALL CompChildOrder(const fgChild* l, const fgChild* r);
-FG_EXTERN void FG_FASTCALL MoveCRect(AbsVec* v, CRect* r);
+FG_EXTERN void FG_FASTCALL MoveCRect(AbsVec v, CRect* r);
 FG_EXTERN char FG_FASTCALL HitAbsRect(const AbsRect* r, FABS x, FABS y);
 //FG_EXTERN void FG_FASTCALL ToIntAbsRect(const AbsRect* r, int target[static 4]);
 FG_EXTERN void FG_FASTCALL ToIntAbsRect(const AbsRect* r, int target[4]);

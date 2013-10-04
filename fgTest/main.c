@@ -410,10 +410,10 @@ RETPAIR test_Root()
   fgWindow_VoidMessage((fgWindow*)top,FG_ADDCHILD,fgButton_Create(fgLoadImage("fake"),0,0,2,0));
   fgWindow_VoidMessage((fgWindow*)top->region.element.root,FG_ADDCHILD,fgMenu_Create(0,0,3,0));
   fgWindow_VoidMessage((fgWindow*)top,FG_ADDCHILD,top->region.element.root->root);
-  fgWindow_VoidMessage((fgWindow*)top,FG_ADDCHILD,fgButton_Create(fgLoadText("fake",0,"arial.ttf",14),0,0,4,0));
+  fgWindow_VoidMessage((fgWindow*)top,FG_ADDCHILD,fgButton_Create(fgLoadText("fake",0,"arial.ttf",14,0),0,0,4,0));
   fgWindow_VoidMessage((fgWindow*)top,FG_ADDCHILD,fgMenu_Create(0,0,5,0));
   fgWindow_VoidMessage((fgWindow*)top,FG_ADDSTATIC,fgLoadImage("fake"));
-  fgStatic_Message(top->region.rlist,FG_RADDCHILD,fgLoadText("fake",0,"arial.ttf",14),0);
+  fgStatic_Message(top->region.rlist,FG_RADDCHILD,fgLoadText("fake",0,"arial.ttf",14,0),0);
   fgWindow_VoidMessage((fgWindow*)top,FG_ADDSTATIC,top->region.rlist->element.root);
   fgRoot_Render(gui);
   ENDTEST;

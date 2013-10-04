@@ -5,29 +5,19 @@
 #define __FG_SKIN_H__
 
 #include "fgWindow.h"
-#include "khash.h"
 
 #ifdef  __cplusplus
 extern "C" {
 #endif
-  /*
-KHASH_MAP_INIT_INT(skin, struct FG_WINDOWSKIN*);
-KHASH_MAP_INIT_STRINS(strskin, struct FG_WINDOWSKIN*);
 
-typedef struct {
-  struct FG_WINDOWSKIN* root;
-  kh_skin_t* hash;
-  kh_strskin_t* strhash;
-} fgSkinSet;
+struct __kh_skin_t;
 
-FG_EXTERN void FG_FASTCALL fgSkinSet_Init(fgSkinSet* self);
-FG_EXTERN void FG_FASTCALL fgSkinSet_Destroy(fgSkinSet* self);
-FG_EXTERN void FG_FASTCALL fgSkinSet_Add(fgSkinSet* self, khint32_t id, const char* name);
-FG_EXTERN struct FG_WINDOWSKIN* FG_FASTCALL fgSkinSet_Get(fgSkinSet* self, khint32_t id);
-FG_EXTERN struct FG_WINDOWSKIN* FG_FASTCALL fgSkinSet_GetStr(fgSkinSet* self, const char* name);
-
-FG_EXTERN void FG_FASTCALL fgSkin_Add(struct FG_WINDOWSKIN* self, fgStatic* stat);
-FG_EXTERN void FG_FASTCALL fgSkin_Destroy(struct FG_WINDOWSKIN* self);*/
+FG_EXTERN struct __kh_skin_t* FG_FASTCALL fgSkin_Create();
+FG_EXTERN void FG_FASTCALL fgSkin_Destroy(struct __kh_skin_t* self);
+FG_EXTERN void FG_FASTCALL fgSkin_Insert(struct __kh_skin_t* self, struct FG_WINDOWSKIN* skin, const char* id);
+FG_EXTERN struct FG_WINDOWSKIN* FG_FASTCALL fgSkin_Get(struct __kh_skin_t* self, const char* id);
+FG_EXTERN struct FG_WINDOWSKIN* FG_FASTCALL fgSkin_Remove(struct __kh_skin_t* self, const char* id);
+FG_EXTERN char FG_FASTCALL fgSkin_Apply(struct __kh_skin_t* self, fgWindow* p);
 
 #ifdef  __cplusplus
 }

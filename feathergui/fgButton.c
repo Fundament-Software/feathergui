@@ -15,18 +15,18 @@ char FG_FASTCALL fgButton_Message(fgButton* self, const FG_Msg* msg)
   assert(self!=0 && msg!=0);
   switch(msg->type)
   {
-  case FG_MOUSEON:
-    STATIC_SET_ENABLE3(1,neutral,hover,active);
-    break;
-  case FG_MOUSEUP:
-    if(fgFocusedWindow==(fgWindow*)self && MsgHitCRect(msg,&self->window.element)) // Does this happen while we have focus AND the event is inside our control?
-      fgWindow_BasicMessage((fgWindow*)self,FG_CLICKED); // Fire off a message
-  case FG_MOUSEOFF: // FG_MOUSEUP falls through
+  case FG_NUETRAL:
     STATIC_SET_ENABLE3(0,neutral,hover,active);
-    break;
-  case FG_MOUSEDOWN:
+    return 0;
+  case FG_HOVER:
+    STATIC_SET_ENABLE3(1,neutral,hover,active);
+    return 0;
+  case FG_ACTIVE:
     STATIC_SET_ENABLE3(2,neutral,hover,active);
-    break;
+    return 0;
+  case FG_GETCLASSNAME:
+    (*(const char**)msg->other) = "fgButton";
+    return 0;
   }
-  return fgWindow_Message(&self->window,msg);
+  return fgWindow_HoverProcess(&self->window,msg);
 }

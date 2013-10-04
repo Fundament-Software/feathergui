@@ -9,7 +9,8 @@ void FG_FASTCALL fgStatic_Init(fgStatic* self)
   memset(self,0,sizeof(fgStatic));
   fgChild_Init(&self->element); 
   self->message=&fgStatic_Message; 
-  self->element.destroy=&fgStatic_Destroy; 
+  self->element.destroy=&fgStatic_Destroy;
+  self->element.flags|=FGSTATIC_MARKER;
 }
 
 void FG_FASTCALL fgStatic_Destroy(fgStatic* self)

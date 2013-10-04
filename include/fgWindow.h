@@ -18,6 +18,10 @@ enum FG_WINFLAGS
   FGGRID_EXPANDY=8,
   FGGRID_TILEX=16,
   FGGRID_TILEY=32,
+  FGSCROLLBAR_VERT=16,
+  FGSCROLLBAR_HORZ=32,
+  FGSCROLLBAR_HIDEX=64,
+  FGSCROLLBAR_HIDEY=128,
   FGTOPWINDOW_MINIMIZE=16,
   FGTOPWINDOW_RESTORE=32,
   FGTOPWINDOW_RESIZABLE=64,
@@ -40,7 +44,6 @@ typedef struct __WINDOW {
 
 struct FG_WINDOWSKIN {
   fgStatic* root; // Holds all statics that should be added to a window and have no logic associated with them.
-  fgStatic* last;
 };
 
 FG_EXTERN fgWindow* fgFocusedWindow;
@@ -53,8 +56,10 @@ FG_EXTERN void FG_FASTCALL fgWindow_SetElement(fgWindow* self, const fgElement* 
 FG_EXTERN void FG_FASTCALL fgWindow_SetArea(fgWindow* self, const CRect* area);
 FG_EXTERN char FG_FASTCALL fgWindow_BasicMessage(fgWindow* self, unsigned char type); // Shortcut for sending type messages with no data
 FG_EXTERN char FG_FASTCALL fgWindow_VoidMessage(fgWindow* self, unsigned char type, void* data); // Shortcut for sending void* messages
+FG_EXTERN char FG_FASTCALL fgWindow_VoidAuxMessage(fgWindow* self, unsigned char type, void* data, int aux);
 FG_EXTERN char FG_FASTCALL fgWindow_IntMessage(fgWindow* self, unsigned char type, int data); // Shortcut for sending int messages
 FG_EXTERN void FG_FASTCALL fgWindow_SetParent(fgWindow* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent);
+FG_EXTERN char FG_FASTCALL fgWindow_HoverProcess(fgWindow* self, const FG_Msg* msg);
 
 #ifdef  __cplusplus
 }

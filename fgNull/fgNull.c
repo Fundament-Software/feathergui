@@ -34,10 +34,11 @@ fgStatic* NullRenderable()
   fgStatic_Init(r);
   return r;
 }
-fgStatic* FG_FASTCALL fgEmptyStatic()
+fgStatic* FG_FASTCALL fgEmptyStatic(fgFlag flags)
 {
   fgStatic* r = (fgStatic*)malloc(sizeof(fgStatic));
   fgStatic_Init(r);
+  r->element.flags=flags;
   return r;
 }
 fgStatic* FG_FASTCALL fgLoadImage(const char* path)
@@ -56,7 +57,7 @@ fgStatic* FG_FASTCALL fgLoadVectorData(const void* data, size_t length)
 {
   return NullRenderable();
 }
-fgStatic* FG_FASTCALL fgLoadText(const char* text, unsigned int flags, const char* font, unsigned int fontsize)
+fgStatic* FG_FASTCALL fgLoadText(const char* text, fgFlag flags, const char* font, unsigned short fontsize, unsigned short lineheight)
 {
   return NullRenderable();
 }

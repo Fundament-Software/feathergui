@@ -32,29 +32,35 @@ void FG_FASTCALL fgWindow_Destroy(fgWindow* self)
 
 char FG_FASTCALL fgWindow_Message(fgWindow* self, const FG_Msg* msg)
 {
-  //FG_Msg aux;
-  char flip,flag,active;
+  int otherint = msg->otherint;
   fgChild* hold;
   assert(self!=0);
   assert(msg!=0);
-
+  
   switch(msg->type)
   {
+  default:
+    return 1;
+  case FG_MOUSEUP: // This is done to take care of the "click button, hold mouse, move over another button, release" problem.
   case FG_MOUSEMOVE:
-    if(fgLastHover!=self)
+    if(MsgHitCRect(msg,&self->element))
     {
-      if(fgLastHover!=0)
-        fgWindow_BasicMessage(fgLastHover,FG_MOUSEOFF);
-      fgLastHover=self;
-      fgWindow_BasicMessage(self,FG_MOUSEON);
+      if(fgLastHover!=self)
+      {
+        if(fgLastHover!=0)
+          fgWindow_BasicMessage(fgLastHover,FG_MOUSEOFF);
+        fgLastHover=self;
+        fgWindow_BasicMessage(self,FG_MOUSEON);
+      }
+      return 0;
     }
-    break;
+    return 1;
   case FG_MOUSEDOWN:
     if(fgFocusedWindow != self)
       fgWindow_BasicMessage(self,FG_GOTFOCUS);
     if(msg->button == 2 && self->contextmenu!=0)
       fgWindow_BasicMessage((fgWindow*)self->contextmenu,FG_GOTFOCUS);
-    break;
+    return !MsgHitCRect(msg,&self->element);
   case FG_GOTFOCUS:
     if(fgFocusedWindow) // We do this here so you can disable getting focus by blocking this message without messing things up
       fgWindow_BasicMessage(fgFocusedWindow,FG_LOSTFOCUS);
@@ -98,36 +104,39 @@ char FG_FASTCALL fgWindow_Message(fgWindow* self, const FG_Msg* msg)
     ((fgStatic*)msg->other)->element.parent=0;
     fgStatic_SetWindow((fgStatic*)msg->other,0);
     break;
+  case FG_SETFLAG: // If 0 is sent in, disable the flag, otherwise enable. Our internal flag is 1 if clipping disabled, 0 otherwise.
+    otherint=T_SETBIT(self->element.flags,otherint,msg->otherintaux);
   case FG_SETFLAGS:
-    self->element.flags=(fgFlag)msg->otherint;
+    {
+    fgFlag change=self->element.flags^(fgFlag)otherint;
+    self->element.flags=(fgFlag)otherint;
+    if(change&FGWIN_NOCLIP) fgWindow_SetParent(self,self->element.parent); // If we change noclip its equivalent to switching the order.
+    }
     break;
   case FG_SHOW: // If 0 is sent in, hide, otherwise show. Our internal flag is 1 if hidden, 0 if shown.
-  case FG_SETFLAG: // If 0 is sent in, disable the flag, otherwise enable. Our internal flag is 1 if clipping disabled, 0 otherwise.
-    if(msg->type==FG_SHOW) {
-      flag=FGWIN_HIDDEN;
-      active=(msg->otherint==0);
-    } else {
-      flag=msg->otherint;
-      active=(msg->otherintaux!=0);
-    }
-    flip = ((-active)&flag)^(self->element.flags&flag);
-    switch(flag)
-    {
-    case FGWIN_NOCLIP: // If we change noclip its equivalent to switching the order.
-      fgWindow_SetParent(self,self->element.parent);
-      break;
-    }
-    self->element.flags^=flip;
+    self->element.flags=T_SETBIT(self->element.flags,FGWIN_HIDDEN,!msg->otherint);
     break;
   case FG_SETORDER:
     self->element.order=msg->otherint;
     fgWindow_SetParent(self,self->element.parent);
     break;
   case FG_MOVE:
-    if(self->element.flags&(FGWIN_NOCLIP|FGWIN_HIDDEN)) // If we are not clipping or hidden, we NEVER propagate FG_MOVE messages.
+    if(self->element.flags&(FGWIN_NOCLIP|FGWIN_HIDDEN)) // If we aren't clipping or are hidden, we NEVER propagate FG_MOVE messages.
       break;
     if(!msg->other && self->element.parent!=0) // If it's internal, we always propagate it if we have a parent.
-      fgWindow_VoidMessage((fgWindow*)self->element.parent,FG_MOVE,self);
+      fgWindow_VoidAuxMessage((fgWindow*)self->element.parent,FG_MOVE,self,-(int)msg->otheraux);
+    if(msg->otheraux>0) // If our dimensions changed, we have to propogate down to all our children that have nonzero relative coordinates.
+    { // We check for otheraux>0 because if it's negative, it was propagated UP instead of down.
+      fgChild* cur = self->element.root;
+      CRect* a;
+      while(hold=cur)
+      {
+        cur=cur->next;
+        a = &hold->element.area;
+        if(a->left.rel!=0 || a->top.rel!=0 || a->right.rel!=0 || a->bottom.rel!=0)
+          fgWindow_VoidAuxMessage((fgWindow*)hold,FG_MOVE,self,a->left.rel!=a->right.rel || a->top.rel!=a->bottom.rel);
+      }
+    }
     break;
   case FG_APPLYSKIN:
     if(msg->other!=0)
@@ -146,8 +155,42 @@ char FG_FASTCALL fgWindow_Message(fgWindow* self, const FG_Msg* msg)
   case FG_DESTROY:
     VirtualFreeChild((fgChild*)self);
     break;
+  case FG_GETCLASSNAME:
+    (*(const char**)msg->other) = "fgWindow";
+    return 0;
   }
   return 0;
+}
+
+char FG_FASTCALL fgWindow_HoverProcess(fgWindow* self, const FG_Msg* msg)
+{
+  char t;
+  assert(self!=0 && msg!=0);
+  switch(msg->type)
+  {
+  case FG_MOUSEMOVE:
+    if(msg->allbtn&FG_MOUSELBUTTON) //If the button is active, eat the mousemove
+      return 0;
+    break;
+  case FG_MOUSEON:
+    fgWindow_BasicMessage(self,FG_HOVER);
+    break;
+  case FG_MOUSEUP:
+    t=MsgHitCRect(msg,&self->element);
+    if(fgFocusedWindow==self && t) // Does this happen while we have focus AND the event is inside our control?
+      fgWindow_BasicMessage(self,FG_CLICKED); // Fire off a message
+    fgWindow_BasicMessage(self,t?FG_HOVER:FG_NUETRAL);
+    break;
+  case FG_MOUSEOFF: // FG_MOUSEUP falls through
+    fgWindow_BasicMessage(self,FG_NUETRAL);
+    break;
+  case FG_MOUSEDOWN:
+    if(msg->button==FG_MOUSELBUTTON && MsgHitCRect(msg,&self->element)) {
+      fgWindow_BasicMessage(self,FG_ACTIVE);
+    }
+    break;
+  }
+  return fgWindow_Message(self,msg);
 }
 
 void FG_FASTCALL fgWindow_SetElement(fgWindow* self, const fgElement* element)
@@ -168,8 +211,13 @@ void FG_FASTCALL fgWindow_SetArea(fgWindow* self, const CRect* area)
   moved = CompareCRects(l,area);
   if(moved)
   {
+    char dimchange = (l->bottom.rel-l->top.rel)!=(area->bottom.rel-area->top.rel) || 
+      (l->right.rel-l->left.rel)!=(area->right.rel-area->left.rel) ||
+      (l->bottom.abs-l->top.abs)!=(area->bottom.abs-area->top.abs) || 
+      (l->right.abs-l->left.abs)!=(area->right.abs-area->left.abs);
+    //(sseVec(&l->right.rel)-sseVec(&l->left.rel))!=(sseVec(&area->right.rel)-sseVec(&area->right.rel))
     memcpy(l,area,sizeof(CRect));
-    fgWindow_BasicMessage(self,FG_MOVE);
+    fgWindow_VoidAuxMessage(self,FG_MOVE,0,dimchange);
   }
 }
 
@@ -188,6 +236,16 @@ char FG_FASTCALL fgWindow_VoidMessage(fgWindow* self, unsigned char type, void* 
   aux.other=data;
   assert(self!=0);
   return (*fgSingleton()->behaviorhook)(self,&aux);
+}
+
+char FG_FASTCALL fgWindow_VoidAuxMessage(fgWindow* self, unsigned char type, void* data, int aux)
+{
+  FG_Msg msg = {0};
+  msg.type=type;
+  msg.other=data;
+  msg.otheraux=aux;
+  assert(self!=0);
+  return (*fgSingleton()->behaviorhook)(self,&msg);
 }
 
 char FG_FASTCALL fgWindow_IntMessage(fgWindow* self, unsigned char type, int data)

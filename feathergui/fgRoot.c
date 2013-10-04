@@ -8,6 +8,7 @@ void FG_FASTCALL fgRoot_Init(fgRoot* self)
 {
   fgWindow_Init((fgWindow*)self,0,0,0,0);
   self->gui.element.destroy=&fgRoot_Destroy;
+  self->gui.message=&fgRoot_Message;
   self->behaviorhook=&fgRoot_BehaviorDefault;
   self->update=&fgRoot_Update;
   self->updateroot=0;
@@ -21,6 +22,19 @@ void FG_FASTCALL fgRoot_Destroy(fgRoot* self)
 {
   (*self->mouse.element.destroy)(&self->mouse);
   fgWindow_Destroy((fgWindow*)self);
+}
+
+char FG_FASTCALL fgRoot_Message(fgWindow* self, const FG_Msg* msg)
+{
+  switch(msg->type)
+  {
+  case FG_GOTFOCUS:
+    return 1; //Root cannot have focus
+  case FG_GETCLASSNAME:
+    (*(const char**)msg->other) = "fgRoot";
+    return 0;
+  }
+  return fgWindow_Message(self,msg);
 }
 
 // Recursive event injection function
@@ -65,6 +79,7 @@ char FG_FASTCALL fgRoot_Inject(fgRoot* self, const FG_Msg* msg)
       return 0;
     if(fgFocusedWindow)
       return (*self->behaviorhook)(fgFocusedWindow,msg);
+    break;
   case FG_MOUSEDOWN:
   case FG_MOUSEUP:
   case FG_MOUSEMOVE:

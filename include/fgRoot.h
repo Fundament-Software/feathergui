@@ -35,6 +35,7 @@ FG_EXTERN fgRoot* FG_FASTCALL fgSingleton();
 FG_EXTERN void FG_FASTCALL fgTerminate(fgRoot* root);
 FG_EXTERN void FG_FASTCALL fgRoot_Init(fgRoot* self);
 FG_EXTERN void FG_FASTCALL fgRoot_Destroy(fgRoot* self);
+FG_EXTERN char FG_FASTCALL fgRoot_Message(fgWindow* self, const FG_Msg* msg);
 FG_EXTERN char FG_FASTCALL fgRoot_Inject(fgRoot* self, const FG_Msg* msg); // Returns 0 if handled, 1 otherwise
 FG_EXTERN char FG_FASTCALL fgRoot_BehaviorDefault(fgWindow* self, const FG_Msg* msg);
 FG_EXTERN char FG_FASTCALL fgRoot_CallBehavior(fgWindow* self, const FG_Msg* msg); // Calls the appropriate fgroot behavior function

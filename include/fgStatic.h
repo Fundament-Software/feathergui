@@ -32,7 +32,7 @@ enum FG_RENDERMSG
   FG_RSETCOLOR,
   FG_RSETFLAGS,
   FG_RSETORDER,
-  FG_RSETFONT, //other should point to a string that contains the name of the font, other should be the size of the font.
+  FG_RSETFONT, //arg should point to a string that contains the name of the font, other should be the size of the font. Optionally, the top 16-bits of other can specify the line-height.
   FG_RCLONE, // Initializes an empty fgStatic passed in as arg as a clone of this static.
   FG_RCUSTOM
 };
@@ -41,6 +41,7 @@ enum FG_STATICFLAGS
 {
   FGSTATIC_CLIP=1, // Causes any type of static to clip its children.
   FGSTATIC_HIDDEN=2, // Hides a static and all its children.
+  FGSTATIC_MARKER=(1<<((sizeof(fgFlag)<<3)-1)), // Tells us this is a static and not a window
 };
 
 enum FG_TEXTFLAGS
@@ -71,6 +72,29 @@ typedef struct __RENDERABLE {
   void* userdata;
 } fgStatic;
 
+typedef struct __RENDERABLE_DEF {
+  fgElement element;
+  int order; // order relative to other windows or statics
+  fgFlag flags;
+} fgStaticDef;
+
+typedef struct __IMAGE_DEF {
+  fgStaticDef def;
+  unsigned int color;
+  const char* data;
+  size_t length; // If length is 0, data is treated as a filepath
+  CRect uv;
+} fgImageDef;
+
+typedef struct __TEXT_DEF {
+  fgStaticDef def;
+  unsigned int color;
+  const char* text;
+  const char* font;
+  unsigned short fontsize;
+  unsigned short lineheight;
+} fgTextDef;
+
 FG_EXTERN void FG_FASTCALL fgStatic_Init(fgStatic* self);
 FG_EXTERN void FG_FASTCALL fgStatic_Destroy(fgStatic* self);
 FG_EXTERN void FG_FASTCALL fgStatic_Message(fgStatic* self, unsigned char type, void* arg, int other);
@@ -82,10 +106,12 @@ FG_EXTERN void FG_FASTCALL fgStatic_SetParent(fgStatic* BSS_RESTRICT self, fgChi
 
 FG_EXTERN fgStatic* FG_FASTCALL fgLoadImage(const char* path);
 FG_EXTERN fgStatic* FG_FASTCALL fgLoadImageData(const void* data, size_t length);
+FG_EXTERN fgStatic* FG_FASTCALL fgLoadImageDef(const fgImageDef* def);
 FG_EXTERN fgStatic* FG_FASTCALL fgLoadVector(const char* path);
 FG_EXTERN fgStatic* FG_FASTCALL fgLoadVectorData(const void* data, size_t length);
-FG_EXTERN fgStatic* FG_FASTCALL fgLoadText(const char* text, unsigned int flags, const char* font, unsigned int fontsize);
-FG_EXTERN fgStatic* FG_FASTCALL fgEmptyStatic();
+FG_EXTERN fgStatic* FG_FASTCALL fgLoadText(const char* text, fgFlag flags, const char* font, unsigned short fontsize, unsigned short lineheight);
+FG_EXTERN fgStatic* FG_FASTCALL fgLoadTextDef(const fgTextDef* def);
+FG_EXTERN fgStatic* FG_FASTCALL fgEmptyStatic(fgFlag flags);
 
 // An item represented by both text and an image is extremely common, so we define this helper struct to make things simpler
 typedef struct {

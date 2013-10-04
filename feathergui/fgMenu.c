@@ -4,7 +4,7 @@
 #include "fgMenu.h"
 #include <time.h>
 
-static const double DROPDOWN_TIME=0.5; // 500 milliseconds for dropdown
+static const double DROPDOWN_TIME=0.4; // 400 milliseconds for dropdown
 
 void FG_FASTCALL fgMenu_Init(fgMenu* self, fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags)
 {
@@ -51,7 +51,7 @@ char FG_FASTCALL fgMenu_Message(fgMenu* self, const FG_Msg* msg)
       self->dropdown->time=fgSingleton()->time+DROPDOWN_TIME;
       fgRoot_ModifyAction(fgSingleton(),self->dropdown);
       loc.y=item->render.element.element.area.top.abs; // This works because the parent's the same, so both locations are relative to the same thing.
-      MoveCRect(&loc,&self->highlight->element.element.area);
+      MoveCRect(loc,&self->highlight->element.element.area);
       (*self->highlight->message)(self->highlight,FG_MOVE,0,0);
       (*self->highlight->message)(self->highlight,FG_RSHOW,(void*)1,0);
     }
@@ -68,6 +68,9 @@ char FG_FASTCALL fgMenu_Message(fgMenu* self, const FG_Msg* msg)
   case FG_LOSTFOCUS:
     fgWindow_IntMessage((fgWindow*)self,FG_SHOW,0);
     break;
+  case FG_GETCLASSNAME:
+    (*(const char**)msg->other) = "fgMenu";
+    return 0;
   }
   return fgWindow_Message((fgWindow*)self,msg);
 }

@@ -15,7 +15,6 @@ struct _FG_BUTTON;
 
 enum FGTOPWINDOW_MSGTYPE {
   FGTOPWINDOW_SETMARGIN=FG_CUSTOMEVENT,
-  FGTOPWINDOW_SETCAPTION,
 };
 
 // A top-level window is an actual window with a titlebar that can be dragged and resized.

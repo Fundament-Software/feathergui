@@ -139,7 +139,7 @@ static const khint32_t __ac_prime_list[__ac_HASH_PRIME_SIZE] =
 static const double __ac_HASH_UPPER = 0.77;
 
 #define KHASH_INIT(name, khkey_t, khval_t, kh_is_map, __hash_func, __hash_equal) \
-	typedef struct {													\
+	typedef struct __kh_##name##_t {													\
 		khint_t n_buckets, size, n_occupied, upper_bound;				\
 		khint32_t *flags;												\
 		khkey_t *keys;													\
