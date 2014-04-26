@@ -49,7 +49,7 @@ char FG_FASTCALL fgRoot_RInject(fgRoot* root, fgWindow* self, const FG_Msg* msg,
     cur=cur->next; // Otherwise the child rejected the message.
   }
   assert(msg!=0 && area!=0);
-  ResolveRectCache(&curarea,&self->element.element,area);
+  ResolveRectCache(&curarea,&self->element,area);
   if((self->element.flags&FGWIN_HIDDEN)!=0 || !MsgHitAbsRect(msg,&curarea)) //If the event completely misses us, or we're hidden, we must reject it
     return 1;
 
@@ -127,7 +127,7 @@ void FG_FASTCALL fgRoot_RListRender(fgStatic* self, AbsRect* area)
   {
     if(!(self->element.flags&FGSTATIC_HIDDEN))
     {
-      ResolveRectCache(&curarea,&self->element.element,area);
+      ResolveRectCache(&curarea,&self->element,area);
       // TODO: allow children to be drawn before parent if the order is negative
       (*self->message)(self,FG_RDRAW,&curarea,0);
       if(self->element.last) // Render everything backwards
@@ -142,7 +142,7 @@ void FG_FASTCALL fgRoot_WinRender(fgWindow* self, AbsRect* area)
   AbsRect curarea;
   fgChild* cur = self->element.last;
   assert(area!=0);
-  ResolveRectCache(&curarea,&self->element.element,area);
+  ResolveRectCache(&curarea,&self->element,area);
 
   if(self->element.flags&FGWIN_HIDDEN) // If we aren't visible, none of our children are either, so bail out.
     return;

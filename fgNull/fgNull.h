@@ -5,11 +5,7 @@
 #ifndef __FG_NULL_H__
 #define __FG_NULL_H__
 
-#include "fgStatic.h"
-#include "fgRoot.h"
-#include "fgButton.h"
-#include "fgMenu.h"
-#include "fgTopWindow.h"
+#include "fgWindow.h"
 
 #ifdef  __cplusplus
 extern "C" {

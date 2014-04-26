@@ -72,37 +72,40 @@ char FG_FASTCALL fgWindow_Message(fgWindow* self, const FG_Msg* msg)
     break;
   case FG_ADDCHILD:
     hold=(fgChild*)msg->other;
-    assert(hold!=0 && hold->destroy!=fgChild_Destroy);
-    assert(hold->parent==0 || hold->parent->destroy!=fgChild_Destroy);
-    if(hold->parent!=0)
-      fgWindow_VoidMessage((fgWindow*)hold->parent,FG_REMOVECHILD,hold);
-    fgWindow_SetParent((fgWindow*)msg->other,&self->element);
+    if(!hold) return 1;
+    if(hold->flags&FGSTATIC_MARKER)
+    {
+      if(hold->parent!=0)
+        fgStatic_NotifyParent((fgStatic*)hold);
+      fgStatic_SetParent((fgStatic*)msg->other,&self->element);
+    }
+    else 
+    {
+      assert(hold!=0 && hold->destroy!=fgChild_Destroy);
+      assert(hold->parent==0 || hold->parent->destroy!=fgChild_Destroy);
+      if(hold->parent!=0)
+        fgWindow_VoidMessage((fgWindow*)hold->parent,FG_REMOVECHILD,hold);
+      fgWindow_SetParent((fgWindow*)msg->other,&self->element);
+    }
     break;
   case FG_REMOVECHILD:
-    assert(((fgChild*)msg->other)->parent==(fgChild*)self);
-    fgWindow_SetParent((fgWindow*)msg->other,0);
+    hold=(fgChild*)msg->other;
+    if(!hold) return 1;
+    assert(hold->parent==(fgChild*)self);
+    if(hold->flags&FGSTATIC_MARKER)
+      fgStatic_SetParent((fgStatic*)hold,0);
+    else
+      fgWindow_SetParent((fgWindow*)hold,0);
     break;
   case FG_SETPARENT:
     hold=(fgChild*)msg->other;
     if(hold==self->element.parent) break;
     assert(hold==0 || hold->destroy!=fgChild_Destroy);
-    if(hold!=0)
+    if(hold!=0) {
+      if(hold->flags&FGSTATIC_MARKER) return 1;
       fgWindow_VoidMessage((fgWindow*)hold,FG_ADDCHILD,self); // This will remove us from our parent if we have one.
-    else // If msg->other is not zero, then our parent MUST be nonzero or we wouldn't have reached this code
+    } else // If hold is zero, then our parent MUST be nonzero, or they'd both be 0 and we wouldn't have reached this code.
       fgWindow_VoidMessage((fgWindow*)self->element.parent,FG_REMOVECHILD,self);
-    break;
-  case FG_ADDSTATIC:
-    hold=(fgChild*)msg->other;
-    fgStatic_NotifyParent((fgStatic*)hold);
-    hold->parent=(fgChild*)self;
-    LList_Add(hold,(fgChild**)&self->rlist,(fgChild**)&self->rlast,0);
-    fgStatic_SetWindow((fgStatic*)hold,self);
-    break;
-  case FG_REMOVESTATIC:
-    assert(((fgStatic*)msg->other)->parent==self);
-    fgStatic_RemoveParent((fgStatic*)msg->other);
-    ((fgStatic*)msg->other)->element.parent=0;
-    fgStatic_SetWindow((fgStatic*)msg->other,0);
     break;
   case FG_SETFLAG: // If 0 is sent in, disable the flag, otherwise enable. Our internal flag is 1 if clipping disabled, 0 otherwise.
     otherint=T_SETBIT(self->element.flags,otherint,msg->otherintaux);
@@ -117,8 +120,21 @@ char FG_FASTCALL fgWindow_Message(fgWindow* self, const FG_Msg* msg)
     self->element.flags=T_SETBIT(self->element.flags,FGWIN_HIDDEN,!msg->otherint);
     break;
   case FG_SETORDER:
-    self->element.order=msg->otherint;
-    fgWindow_SetParent(self,self->element.parent);
+    if(!msg->other2) // If it's internal, that means we need to change our order.
+    {
+      int old = self->element.order;
+      self->element.order=msg->otherint;
+      LList_ChangeOrder((fgChild*)self,&self->element.parent->root,&self->element.parent->last,FGWIN_NOCLIP);
+      if(self->element.parent!=0) // Propagate up if we have a parent
+      {
+        FG_Msg aux={0};
+        aux.type=FG_SETORDER;
+        aux.otherint=old;
+        aux.other2=self;
+        assert(self!=0);
+        return (*fgSingleton()->behaviorhook)((fgWindow*)self->element.parent,&aux);
+      }
+    } // Otherwise it's external, which is just a notification in case we care about it.
     break;
   case FG_MOVE:
     if(self->element.flags&(FGWIN_NOCLIP|FGWIN_HIDDEN)) // If we aren't clipping or are hidden, we NEVER propagate FG_MOVE messages.
@@ -139,11 +155,12 @@ char FG_FASTCALL fgWindow_Message(fgWindow* self, const FG_Msg* msg)
     }
     break;
   case FG_APPLYSKIN:
-    if(msg->other!=0)
+    self->skin=(struct FG_WINDOWSKIN*)msg->other;
+    if(self->skin!=0)
     {
-      fgStatic* cur=((struct FG_WINDOWSKIN*)msg->other)->root;
+      fgStatic* cur=self->skin->root;
       FG_Msg aux = {0};
-      aux.type=FG_ADDSTATIC;
+      aux.type=FG_ADDCHILD;
       while(cur)
       {
         aux.other=(*cur->clone)(cur);

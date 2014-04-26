@@ -2,6 +2,7 @@
 // For conditions of distribution and use, see copyright notice in "feathergui.h"
 
 #include "fgWindow.h"
+#include "fgRoot.h"
 
 void FG_FASTCALL fgStatic_Init(fgStatic* self)
 { 
@@ -16,43 +17,46 @@ void FG_FASTCALL fgStatic_Init(fgStatic* self)
 void FG_FASTCALL fgStatic_Destroy(fgStatic* self)
 {
   assert(self!=0);
+  (*self->message)(self,FG_RSETPARENT,0,0);
   fgStatic_NotifyParent(self);
-  
-  while(self->element.root)
-    VirtualFreeChild(self->element.root);
-}
-void FG_FASTCALL fgStatic_RemoveParent(fgStatic* self)
-{
-  assert(self!=0);
-  if(self->parent!=0 && (&self->parent->element)==self->element.parent)
-    LList_Remove(&self->element, (fgChild**)&self->parent->rlist, (fgChild**)&self->parent->rlast); // Remove ourselves from our window parent 
-  else if(self->element.parent!=0) // Otherwise remove ourselves from our static parent, which has a different root
-    LList_Remove(&self->element,&self->element.parent->root,&self->element.parent->last);
-  self->element.next=0;
-  self->element.prev=0;
+  fgChild_Destroy(&self->element);
 }
 void FG_FASTCALL fgStatic_NotifyParent(fgStatic* self)
 {
   assert(self!=0);
-  if(self->parent!=0 && (&self->parent->element)==self->element.parent) // Notify parent window of removal
-    fgWindow_VoidMessage(self->parent,FG_REMOVESTATIC,self);
-  else if(self->element.parent!=0) // Otherwise notify parent static of removal
+  if(self->element.parent->flags&FGSTATIC_MARKER) // Is our parent a static?
     (*((fgStatic*)self->element.parent)->message)((fgStatic*)self->element.parent,FG_RREMOVECHILD,self,0);
-  assert(self->element.parent==0);
+  else // If not, notify as a window
+    fgWindow_VoidMessage((fgWindow*)self->element.parent,FG_REMOVECHILD,self);
 }
 void FG_FASTCALL fgStatic_Message(fgStatic* self, unsigned char type, void* arg, int other)
 {
+  fgStatic* hold=(fgStatic*)arg;
   assert(self!=0);
 
   switch(type)
   {
   case FG_RADDCHILD:
-    fgStatic_NotifyParent((fgStatic*)arg);
-    fgStatic_SetParent((fgStatic*)arg,&self->element);
+    if(!hold) break; 
+    assert(hold->element.flags&FGSTATIC_MARKER); // can't add a window to a static
+    if(hold->element.parent!=0)
+      fgStatic_NotifyParent(hold);
+    fgStatic_SetParent(hold,(fgChild*)self);
     break;
   case FG_RREMOVECHILD:
-    assert(((fgStatic*)arg)->element.parent==&self->element);
-    fgStatic_SetParent((fgStatic*)arg,0);
+    if(!hold) break;
+    assert(hold->element.parent==(fgChild*)self);
+    fgStatic_SetParent(hold,0);
+    break;
+  case FG_SETPARENT:
+    if(((fgChild*)hold)==self->element.parent) break;
+    if(hold!=0) {
+      if(self->element.parent->flags&FGSTATIC_MARKER) // Is our parent a static?
+        (*((fgStatic*)self->element.parent)->message)((fgStatic*)self->element.parent,FG_RADDCHILD,self,0);
+      else // If not, notify as a window
+        fgWindow_VoidMessage((fgWindow*)self->element.parent,FG_ADDCHILD,self);
+    } else // If hold is zero, then our parent MUST be nonzero, or they'd both be 0 and we wouldn't have reached this code.
+      fgStatic_NotifyParent(self);
     break;
   case FG_RSETAREA:
     memcpy(&self->element.element.area,arg,sizeof(CRect));
@@ -63,19 +67,31 @@ void FG_FASTCALL fgStatic_Message(fgStatic* self, unsigned char type, void* arg,
     (self->message)(self,FG_RMOVE,0,0);
     break;
   case FG_RSETORDER:
-    self->element.order=(FG_UINT)arg;
-    fgStatic_RemoveParent(self);
-    if(self->parent!=0 && (&self->parent->element)==self->element.parent)
-      fgWindow_VoidMessage(self->parent,FG_ADDSTATIC,self);
-    else if(self->element.parent!=0)
-      fgStatic_SetParent(self,self->element.parent);
+    if(self->element.parent)
+    {
+      int old = self->element.order;
+      self->element.order=(int)arg;
+      if(!(self->element.parent->flags&FGSTATIC_MARKER)) // if our parent is a window, notify them.
+      {
+        fgWindow* parent=(fgWindow*)self->element.parent;
+        FG_Msg aux = {0};
+        LList_ChangeOrder((fgChild*)self,(fgChild**)&parent->rlist,(fgChild**)&parent->rlast,0);
+        aux.type=FG_SETORDER;
+        aux.otherint=old;
+        aux.other2=self;
+        assert(self!=0);
+        (*fgSingleton()->behaviorhook)(parent,&aux);
+      }
+      else
+        LList_ChangeOrder((fgChild*)self,&self->element.parent->root,&self->element.parent->last,0);
+    }
     break;
   case FG_RSETFLAGS:
     self->element.flags=(fgFlag)arg;
     break;
   case FG_RMOVE:
-    if(self->parent!=0 && (&self->parent->element)==self->element.parent) // If our parent is a window, pass it an FG_MOVE message
-      fgWindow_VoidMessage(self->parent,FG_MOVE,self);
+    if(self->element.parent!=0 && !(self->element.parent->flags&FGSTATIC_MARKER)) // If our parent is a window, pass it an FG_MOVE message
+      fgWindow_VoidMessage((fgWindow*)self->element.parent,FG_MOVE,self);
     break;
   case FG_RSHOW:
     self->element.flags=T_SETBIT(self->element.flags,FGSTATIC_HIDDEN,!((char)arg));
@@ -83,21 +99,39 @@ void FG_FASTCALL fgStatic_Message(fgStatic* self, unsigned char type, void* arg,
   }
 }
 
-void FG_FASTCALL fgStatic_SetParent(fgStatic* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent)
+void FG_FASTCALL fgStatic_SetParent(fgStatic* BSS_RESTRICT selfp, fgChild* BSS_RESTRICT parent)
 {
-  fgChild_SetParent((fgChild*)self,parent,0);
-  (self->message)(self,FG_RMOVE,0,0);
-}
+  fgChild* self = (fgChild*)selfp;
+  fgWindow* win = (fgWindow*)self->parent;
 
-void FG_FASTCALL fgStatic_SetWindow(fgStatic* self, struct __WINDOW* window)
-{
-  fgChild* cur=self->element.root;
-  self->parent=window;
-  while(cur)
-  {
-    fgStatic_SetWindow((fgStatic*)cur,window);
-    cur=cur->next;
+  if(self->parent==parent) { // If this is true, we just need to make sure the ordering is valid
+    if(parent->flags&FGSTATIC_MARKER)
+      LList_ChangeOrder(self,&parent->root,&parent->last,0);
+    else
+      LList_ChangeOrder(self,(fgChild**)&win->rlist,(fgChild**)&win->rlast,0);
+    return;
   }
+
+  if(self->parent!=0) { // Remove ourselves from our parent
+    if(self->parent->flags&FGSTATIC_MARKER)
+      LList_Remove(self,&self->parent->root,&self->parent->last);
+    else
+      LList_Remove(self,(fgChild**)&win->rlist,(fgChild**)&win->rlast);
+  }
+
+  self->next=0;
+  self->prev=0;
+  self->parent=parent;
+  win = (fgWindow*)parent;
+
+  if(parent) {
+    if(parent->flags&FGSTATIC_MARKER)
+      LList_Add(self,&parent->root,&parent->last,0);
+    else
+      LList_Add(self,(fgChild**)&win->rlist,(fgChild**)&win->rlast,0);
+  }
+
+  (*selfp->message)(selfp,FG_RMOVE,0,0);
 }
 void FG_FASTCALL fgStatic_Clone(fgStatic* self, fgStatic* from)
 {
@@ -114,15 +148,19 @@ void FG_FASTCALL fgStatic_Clone(fgStatic* self, fgStatic* from)
   }
 }
 
-//void FG_FASTCALL SetSkinArray(fgStatic** pp, unsigned char size, unsigned char index)
+FG_EXTERN fgStatic* FG_FASTCALL fgLoadImage(const char* path)
+{
+  return fgLoadImageData(path,0,0);
+}
+
+
+//void FG_FASTCALL fgStatic_SetWindow(fgStatic* self, struct __WINDOW* window)
 //{
-//  unsigned char i;
-//  assert(pp!=0);
-//  for(i = 0; i < size; ++i)
-//    if(pp[i])
-//      (*pp[i]->message)(pp[i],FG_RSHOW,0);
-//  
-//  if(pp[index])
-//    (*pp[index]->message)(pp[index],FG_RSHOW,(void*)1);
+//  fgChild* cur=self->element.root;
+//  self->parent=window;
+//  while(cur)
+//  {
+//    fgStatic_SetWindow((fgStatic*)cur,window);
+//    cur=cur->next;
+//  }
 //}
-//

@@ -3,6 +3,9 @@
 
 #include "fgTest.h"
 #include "../fgNull/fgNull.h"
+#include "fgButton.h"
+#include "fgMenu.h"
+#include "fgTopWindow.h"
 #include "bss_defines.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,7 +17,6 @@
 #pragma comment(lib, "../bin/fgNull64.lib")
 #elif defined(BSS_DEBUG)
 #pragma comment(lib, "../bin/fgNull_d.lib")
-#pragma comment(lib, "../bin/feathergui_d.lib")
 #else
 #pragma comment(lib, "../bin/fgNull.lib")
 #endif
@@ -87,6 +89,7 @@ RETPAIR test_feathergui()
   CVec vec;
   AbsVec res;
   FG_Msg msg;
+  fgVector v; //fgVector functionality tests
 
   TEST(fbnext(0)==1); // Basic function tests
   TEST(fbnext(1)==2);
@@ -96,6 +99,35 @@ RETPAIR test_feathergui()
   TEST(lerp(0.0f,1.0f,1.0f)==1.0f);
   TEST(lerp(-1.0f,1.0f,0.0f)==-1.0f);
   
+  fgVector_Init(&v);
+  TEST(!v.p);
+  fgVector_Add(v,2,int);
+  fgVector_Remove(&v,0,sizeof(int));
+  TEST(v.l==0);
+  fgVector_Insert(v,1,0,int);
+  TEST(fgVector_Get(v,0,int)==1);
+  TEST(v.l==1);
+  fgVector_Insert(v,4,0,int);
+  TEST(fgVector_Get(v,0,int)==1);
+  TEST(fgVector_Get(v,1,int)==4);
+  TEST(v.l==2);
+  fgVector_Insert(v,8,2,int);
+  TEST(fgVector_Get(v,0,int)==1);
+  TEST(fgVector_Get(v,1,int)==4);
+  TEST(fgVector_Get(v,2,int)==8);
+  TEST(v.l==3);
+  fgVector_Add(v,16,int);
+  TEST(fgVector_Get(v,3,int)==16);
+  TEST(v.l==4);
+  fgVector_SetSize(&v,2,sizeof(int));
+  TEST(v.l==2);
+  TEST(fgVector_Get(v,0,int)==1);
+  TEST(fgVector_Get(v,1,int)==4);
+  fgVector_Remove(&v,1,sizeof(int));
+  fgVector_Remove(&v,0,sizeof(int));
+  TEST(v.l==0);
+  fgVector_Destroy(&v);
+
   fgChild_Init(&ch); // Basic initialization test
   memset(&zeroelement,0,sizeof(fgElement));
   TEST(!memcmp(&ch.element,&zeroelement,sizeof(fgElement)));
@@ -206,7 +238,7 @@ RETPAIR test_feathergui()
   elem.area.right.abs=0.4f;
   elem.area.bottom.abs=0.5f;
   ResolveRectCache(&out, &elem, &last);
-  TEST(out.top==0.2f && // Surprisingly, this works on x87 but may break in single-precision mode. Replace with fcompare if that happens.
+  TEST(out.top==0.2f && // Surprisingly, this works with floats but may break in single-precision mode. Replace with fcompare if that happens.
         out.left==0.3f &&
         out.right==0.4f &&
         out.bottom==0.5f);
@@ -361,7 +393,25 @@ RETPAIR test_feathergui()
   cother.right.rel=1;
   TEST(CompareCRects(&crect, &cother)==0);
 
-  //CompChildOrder();
+  {
+    int conv[4];
+    long lconv[4];
+    CRect ctest = { 2,0.3,4,2.0,8,0.5,16,1.0 };
+    AbsVec cmov = { -1,-2 };
+    CRect ctestans = { 1,0.3,2,2.0,7,0.5,14,1.0 };
+    MoveCRect(cmov,&ctest);
+    TEST(!memcmp(&ctest,&ctestans,sizeof(CRect)));
+    ToIntAbsRect(&last,conv);
+    ToLongAbsRect(&last,lconv);
+  }
+
+
+//FG_EXTERN void FG_FASTCALL LList_Remove(fgChild* self, fgChild** root, fgChild** last);
+//FG_EXTERN void FG_FASTCALL LList_Add(fgChild* self, fgChild** root, fgChild** last, fgFlag flag);
+//FG_EXTERN void FG_FASTCALL LList_Insert(fgChild* self, fgChild* target, fgChild** last);
+//FG_EXTERN void FG_FASTCALL LList_ChangeOrder(fgChild* self, fgChild** root, fgChild** last, fgFlag flag);
+
+
   ENDTEST;
 }
 
@@ -372,12 +422,6 @@ RETPAIR test_Static()
 }
 
 RETPAIR test_Window()
-{
-  BEGINTEST;
-  ENDTEST;
-}
-
-RETPAIR test_TopWindow()
 {
   BEGINTEST;
   ENDTEST;
@@ -408,13 +452,11 @@ RETPAIR test_Root()
   (*gui->update)(gui,10);
   TEST(test_root_STAGE==2);
   fgWindow_VoidMessage((fgWindow*)top,FG_ADDCHILD,fgButton_Create(fgLoadImage("fake"),0,0,2,0));
-  fgWindow_VoidMessage((fgWindow*)top->region.element.root,FG_ADDCHILD,fgMenu_Create(0,0,3,0));
   fgWindow_VoidMessage((fgWindow*)top,FG_ADDCHILD,top->region.element.root->root);
   fgWindow_VoidMessage((fgWindow*)top,FG_ADDCHILD,fgButton_Create(fgLoadText("fake",0,"arial.ttf",14,0),0,0,4,0));
-  fgWindow_VoidMessage((fgWindow*)top,FG_ADDCHILD,fgMenu_Create(0,0,5,0));
-  fgWindow_VoidMessage((fgWindow*)top,FG_ADDSTATIC,fgLoadImage("fake"));
+  fgWindow_VoidMessage((fgWindow*)top,FG_ADDCHILD,fgLoadImage("fake"));
   fgStatic_Message(top->region.rlist,FG_RADDCHILD,fgLoadText("fake",0,"arial.ttf",14,0),0);
-  fgWindow_VoidMessage((fgWindow*)top,FG_ADDSTATIC,top->region.rlist->element.root);
+  fgWindow_VoidMessage((fgWindow*)top,FG_ADDCHILD,top->region.rlist->element.root);
   fgRoot_Render(gui);
   ENDTEST;
 }
@@ -422,16 +464,33 @@ RETPAIR test_Root()
 RETPAIR test_Grid()
 {
   BEGINTEST;
+  fgWindow win[4] = {0};
+  fgStatic* statics[2] = { fgEmptyStatic(0), fgEmptyStatic(0) };
+  fgGrid grid;
+
+  int i;
+  for(i=0; i < 4; ++i) fgWindow_Init(win+i,0,0,0,0);
+  win[3].element.flags|=FGWIN_NOCLIP;
+  
+  fgGrid_Init(&grid,0,0,0,0);
+
+
   ENDTEST;
 }
 
-RETPAIR test_Container()
+RETPAIR test_TopWindow()
 {
   BEGINTEST;
   ENDTEST;
 }
 
 RETPAIR test_Button()
+{
+  BEGINTEST;
+  ENDTEST;
+}
+
+RETPAIR test_List()
 {
   BEGINTEST;
   ENDTEST;
@@ -534,11 +593,11 @@ int main(int argc, char** argv)
     { "feathergui.h", &test_feathergui },
     { "fgStatic.h", &test_Static },
     { "fgWindow.h", &test_Window },
-    { "fgTopWindow.h", &test_TopWindow },
     { "fgRoot.h", &test_Root },
     { "fgGrid.h", &test_Grid },
-    { "fgContainer.h", &test_Container },
+    { "fgTopWindow.h", &test_TopWindow },
     { "fgButton.h", &test_Button },
+    { "fgList.h", &test_List },
     { "fgMenu.h", &test_Menu },
     { "TERMINATE", &test_TERMINATE },
   };

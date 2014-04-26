@@ -6,13 +6,14 @@
 
 static const double DROPDOWN_TIME=0.4; // 400 milliseconds for dropdown
 
+/*
 void FG_FASTCALL fgMenu_Init(fgMenu* self, fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags)
 {
   FG_Msg msg = {0};
   assert(self!=0);
   fgWindow_Init(&self->window,parent,element,id,flags);
-  self->window.message=&fgMenu_Message;
-  self->window.element.destroy=&fgMenu_Destroy;
+  self->window.window.message=&fgMenu_Message;
+  self->window.window.element.destroy=&fgMenu_Destroy;
   self->dropdown=fgRoot_AllocAction(&fgMenu_DoDropdown,0,0);
   fgGrid_Init(&self->grid,(fgWindow*)self,element,id,flags);
   //fgWindow_Init(&self->overlay,(fgWindow*)self,0,0,0);
@@ -80,3 +81,4 @@ FG_EXTERN char FG_FASTCALL fgMenu_DoDropdown(fgMenu* self)
   fgWindow_BasicMessage((fgWindow*)self,FG_GOTFOCUS); // By transfering focus to our child menu it will show itself.
   return 0;
 }
+//*/

@@ -4,7 +4,7 @@
 #ifndef __FG_MENU_H__
 #define __FG_MENU_H__
 
-#include "fgGrid.h"
+#include "fgList.h"
 #include "fgRoot.h"
 
 #ifdef  __cplusplus
@@ -13,20 +13,12 @@ extern "C" {
 
 // A Menu is either a window menu or a context menu. Turns into a menubar if made the child of a top-level window
 typedef struct FG_MENU {
-  fgWindow window; 
-  fgGrid grid[5]; // One grid as a child of this menu, 4 grids that are children of it (image, text, shortcut, submenus)
-  struct FG_MENU* expanded; // Stores the current item that has an expanded submenu, if any exist.
+  fgList list; 
   fgStatic* highlight;
   fgStatic* seperator;
   fgStatic* arrow;
   fgDeferAction* dropdown; // Keeps track of our dropdown action in fgRoot
-  fgTextDef def; 
 } fgMenu;
-
-struct FG_MENUITEM {
-  fgStatic render; // FG_MENUITEM is an empty static containing the 3 or 4 child statics that make up a menu item.
-  fgMenu* submenu; // submenu's parent is the menu that this static is a child of.
-}; // By default a menu will only render text, but FGMENU_IMAGES will render a column of images on the left side for items that have them. This is automatically enabled when an item with an image is added, but can be manually turned on via SETFLAG
 
 struct FG_MENUSKIN {
   struct FG_GRIDSKIN base;

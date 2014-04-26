@@ -13,16 +13,15 @@ extern "C" {
 
 // A List is a list of items that can be sorted into any number of columns and optionally have column headers.
 typedef struct {
-  fgGrid window; // Buttons are directly added as children to the list.
-  fgScrollbar list; // Actual list scrollbar area. Contains one or more fgGrids and nothing else.
-  fgStatic* selected; // Stores current selected item.
+  fgScrollbar window;
+  fgGrid grid;
   fgStatic* selector;
   fgStatic* highlighter;
 } fgList;
 
 struct FG_LISTSKIN {
   struct FG_GRIDSKIN base;
-  fgStatic* selected; // Stores current selected item.
+  struct FG_GRIDSKIN column;
   fgStatic* selector;
   fgStatic* highlighter;
 };

@@ -12,9 +12,25 @@ void FG_FASTCALL fgButton_Init(fgButton* self, fgWindow* parent, const fgElement
 }
 char FG_FASTCALL fgButton_Message(fgButton* self, const FG_Msg* msg)
 {
+  static fgElement defelem = { 0,0,0,0,0,0,0,0,0,0,0.5f,0,0.5f };
+
   assert(self!=0 && msg!=0);
   switch(msg->type)
   {
+  case FG_SETCAPTION:
+    if(!self->item) {
+      self->item=fgLoadDefaultText(msg->other);
+      fgWindow_VoidMessage((fgWindow*)self,FG_ADDCHILD,self->item);
+    }
+    else
+      (*self->item->message)(self->item,FG_RSETTEXT,msg->other,0);
+    return 0;
+  case FG_ADDITEM:
+    if(self->item)
+      VirtualFreeChild((fgChild*)self->item);
+    self->item=fgLoadDef(msg->other,!self->window.skin?&defelem:&((struct FG_BUTTONSKIN*)self->window.skin)->item,1);
+    fgWindow_VoidMessage((fgWindow*)self,FG_ADDCHILD,self->item);
+    return 0;
   case FG_NUETRAL:
     STATIC_SET_ENABLE3(0,neutral,hover,active);
     return 0;

@@ -1,4 +1,4 @@
-﻿// Copyright ©2012 Black Sphere Studios
+﻿// Copyright ©2014 Black Sphere Studios
 // For conditions of distribution and use, see copyright notice in "bss_util.h"
 
 #ifndef __BSS_DEFINES_H__
@@ -9,7 +9,7 @@
 // Version numbers
 #define BSS_VERSION_MAJOR 0
 #define BSS_VERSION_MINOR 4
-#define BSS_VERSION_REVISION 0
+#define BSS_VERSION_REVISION 2
 
 //sometimes the std versions of these are a bit overboard, so this redefines the MS version, except it will no longer cause conflicts everywhere
 #define bssmax(a,b)            (((a) > (b)) ? (a) : (b))
@@ -30,24 +30,17 @@
 #endif
 #define CONCAT(...) __VA_ARGS__
 
-// These are random number generator #defines. Note that RANDINTGEN is susceptible to modulo bias, so if you need a true distribution cast
-// RANDFLOATGEN to int. Actually if you need a true distribution just use the damn std random class in C++11 like you're supposed to.
+    
+// These yield float/int ranges using rand(). However, rand() is a horrible RNG, so if you need a real one, use the C++11 mersenne twister
 #ifndef RANDFLOATGEN
-#define RANDFLOATGEN(min,max) (((max) - (min)) * (double)rand()/(double)RAND_MAX + (min))
+#define RANDFLOATGEN(min,max) (((max) - (min)) * (rand()/(RAND_MAX+1.0)) + (min))
 #endif
 #ifndef RANDINTGEN
-#define RANDINTGEN(min,max) ((min)+(rand()%((int)((max)-(min))))) // This is [min,max) instead of [min,max] to facilitate use of length as max
+#define RANDINTGEN(min,max) ((min)+(int)((rand()/(RAND_MAX + 1.0))*((max)-(min))))
 #endif
 #ifndef RANDBOOLGEN
 #define RANDBOOLGEN() (rand()>(RAND_MAX>>1))
 #endif
-
-//These can be used to define properties
-#define CLASS_PROP(typeref, varname, funcname) CLASS_PROP_READONLY(typeref,varname,funcname) CLASS_PROP_WRITEONLY(typeref,varname,funcname)
-#define CLASS_PROP_VAL(typeref, varname, funcname) CLASS_PROP_READONLY(typeref,varname,funcname) CLASS_PROP_WRITEONLY_VAL(typeref,varname,funcname)
-#define CLASS_PROP_READONLY(typeref, varname, funcname) inline typeref Get##funcname() const { return varname; }
-#define CLASS_PROP_WRITEONLY(typeref, varname, funcname) inline void Set##funcname(const typeref m##varname##) { varname=m##varname##; }
-#define CLASS_PROP_WRITEONLY_VAL(typeref, varname, funcname) inline void Set##funcname(typeref m##varname##) { varname=m##varname##; }
 
 #define SAFESHIFT(v,s) ((s>0)?(v<<s):(v>>(-s))) //positive number shifts left, negative number shifts right, prevents undefined behavior.
 #define T_GETBIT(type, bit) ((type)(((type)1)<<(((type)bit)%(sizeof(type)<<3)))) // Gets a bitmask using its 0-based index.
@@ -58,13 +51,17 @@
 // This calculates the most significant bit in an 8-bit integer (CHAR) at compile time. It's really just a basterdized version of
 // i |= i >> 1; i |= i >> 2; i |= i >> 4; i -= i >> 1; so that it happens during compile time.
 #define T_CHARGETMSB(i) ((((i | (i>>1)) | ((i | (i>>1))>>2)) | (((i | (i>>1)) | ((i | (i>>1))>>2))>>4)) - ((((i | (i>>1)) | ((i | (i>>1))>>2)) | (((i | (i>>1)) | ((i | (i>>1))>>2))>>4))>>1)) // I CAN'T BELIEVE THIS WORKS（ ﾟДﾟ）
+// Round x up to next highest multiple of (t+1), which must be a multiple of 2. For example, to get the next multiple of 8: T_NEXTMULTIPLE(x,7)
+#define T_NEXTMULTIPLE(x,t) ((x+t)&(~t))
+#define T_SETBIT(w,b,f) (((w) & (~(b))) | ((-(char)f) & (b)))
+#define DYNARRAY(Type,Name,n) Type* Name = (Type*)ALLOCA(n*sizeof(Type))
 
 #if defined(BSS_PLATFORM_POSIX) || defined(BSS_PLATFORM_MINGW)
 #define BSSPOSIX_WCHAR(s) s
-#define BSSPOSIX_CHAR(s) cStr(s).c_str()
+#define BSS__L(x)      x
 #elif defined(BSS_PLATFORM_WIN32)
 #define BSSPOSIX_WCHAR(s) cStrW(s).c_str()
-#define BSSPOSIX_CHAR(s) s
+#define BSS__L(x)      L ## x
 #endif
 
 //unsigned shortcuts
@@ -72,11 +69,13 @@
 #ifdef  __cplusplus
 namespace bss_util { // This namespace can be inconvenient but its necessary because everything else on earth tries to define these too.
 #endif
+typedef unsigned char uint8;
 typedef unsigned short ushort;
+typedef unsigned short uint16;
 typedef unsigned int uint;
+typedef unsigned int uint32;
 typedef unsigned __int64 uint64;
 typedef unsigned long ulong;
-typedef unsigned long long ulonglong;
 #ifdef  __cplusplus
 }
 #endif
@@ -86,6 +85,86 @@ typedef unsigned long long ulonglong;
 #define BSS_FASTCALL BSS_COMPILER_FASTCALL
 #else
 #define BSS_FASTCALL BSS_COMPILER_STDCALL
+#endif
+
+#ifndef BSS_STATIC_LIB
+#ifdef BSS_UTIL_EXPORTS
+#define BSS_DLLEXPORT BSS_COMPILER_DLLEXPORT
+#else
+#define BSS_DLLEXPORT BSS_COMPILER_DLLIMPORT
+#endif
+#else
+#define BSS_DLLEXPORT
+#endif
+
+
+#ifdef BSS_COMPILER_MSC
+#define TIME64(ptime) _time64(ptime)
+#define GMTIMEFUNC(time, tm) _gmtime64_s(tm, time)
+#define VSNPRINTF(dst,size,format,list) _vsnprintf_s(dst,size,size,format,list)
+#define VSNWPRINTF(dst,size,format,list) _vsnwprintf_s(dst,size,size,format,list)
+#define VSCPRINTF(format,args) _vscprintf(format,args)
+#define VSCWPRINTF(format,args) _vscwprintf(format,args)
+#define FOPEN(f, path, mode) fopen_s(&f, path, mode)
+#define WFOPEN(f, path, mode) _wfopen_s(&f, path, mode)
+#define MEMCPY(dst,size,src,count) memcpy_s(dst,size,src,count)
+#define STRNCPY(dst,size,src,count) strncpy_s(dst,size,src,count)
+#define WCSNCPY(dst,size,src,count) wcsncpy_s(dst,size,src,count)
+#define STRCPY(dst,size,src) strcpy_s(dst,size,src)
+#define WCSCPY(dst,size,src) wcscpy_s(dst,size,src)
+#define STRCPYx0(dst,src) strcpy_s(dst,src)
+#define WCSCPYx0(dst,src) wcscpy_s(dst,src)
+#define STRICMP(a,b) _stricmp(a,b)
+#define WCSICMP(a,b) _wcsicmp(a,b)
+#define STRNICMP(a,b,n) _strnicmp(a,b,n)
+#define WCSNICMP(a,b,n) _wcsnicmp(a,b,n)
+#define STRTOK(str,delim,context) strtok_s(str,delim,context)
+#define WCSTOK(str,delim,context) wcstok_s(str,delim,context)
+#define STRLWR(a) _strlwr(a)
+#define WCSLWR(a) _wcslwr(a)
+#define SSCANF sscanf_s
+#define ITOAx0(v,buf,r) _itoa_s(v,buf,r)
+#define ITOA(v,buf,bufsize,r) _itoa_s(v,buf,bufsize,r)
+#define ATOLL(s) _atoi64(s)
+#define STRTOULL(s,e,r) _strtoui64(s,e,r)
+#define ALLOCA(x) _malloca(x)
+#else
+#ifdef BSS_PLATFORM_MINGW
+#define TIME64(ptime) _time64(ptime)
+#define GMTIMEFUNC(time, tm) _gmtime64_s(tm, time)
+#define VSNWPRINTF(dst,size,format,list) vsnwprintf(dst,size,format,list)
+#else
+#define TIME64(ptime) time(ptime) // Linux does not have explicit 64-bit time functions, time_t will simply be 64-bit if the OS is 64-bit.
+#define GMTIMEFUNC(time, tm) (gmtime_r(time, tm)==0) // This makes it so it will return 1 on error and 0 otherwise, matching _gmtime64_s
+#define VSNWPRINTF(dst,size,format,list) vswprintf(dst,size,format,list) //vswprintf is exactly what vsnwprintf should be, for some reason.
+#endif
+
+#define VSNPRINTF(dst,size,format,list) vsnprintf(dst,size,format,list)
+#define VSCPRINTF(format,args) vsnprintf(0,0,format,args)
+//#define VSCWPRINTF(format,args) _vscwprintf(format,args) //no way to implement this
+#define FOPEN(f, path, mode) f = fopen(path, mode)
+#define WFOPEN(f, path, mode) f = fopen(path, mode)
+#define MEMCPY(dst,size,src,count) memcpy(dst,src,((size)<(count))?(size):(count))
+#define STRNCPY(dst,size,src,count) strncpy(dst,src,((size)<(count))?(size):(count))
+#define WCSNCPY(dst,size,src,count) wcsncpy(dst,src,((size)<(count))?(size):(count))
+#define STRCPY(dst,size,src) strncpy(dst,src,size-1)
+#define WCSCPY(dst,size,src) wcsncpy(dst,src,size-1)
+#define STRCPYx0(dst,src) strcpyx0(dst,src)
+//#define WCSCPYx0(dst,src) wcscpyx0(dst,src)
+#define STRICMP(a,b) strcasecmp(a,b)
+#define WCSICMP(a,b) wcscasecmp(a,b)
+#define STRNICMP(a,b,n) strncasecmp(a,b,n)
+#define WCSNICMP(a,b,n) wcsncasecmp(a,b,n)
+#define STRTOK(str,delim,context) strtok_r(str,delim,context)
+#define WCSTOK(str,delim,context) wcstok(str,delim,context) // For some reason, in linux, wcstok *IS* the threadsafe version
+#define STRLWR(a) strlwr(a)
+#define WCSLWR(a) wcslwr(a)
+#define SSCANF sscanf
+#define ITOAx0(v,buf,r) _itoa_r(v,buf,r)
+#define ITOA(v,buf,bufsize,r) itoa_r(v,buf,bufsize,r)
+#define ATOLL(s) atoll(s)
+#define STRTOULL(s,e,r) strtoull(s,e,r)
+#define ALLOCA(x) alloca(x)
 #endif
 
 #endif

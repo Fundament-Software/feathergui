@@ -24,12 +24,10 @@ char FG_FASTCALL fgTopWindow_Message(fgTopWindow* self, const FG_Msg* msg)
 
   switch(msg->type)
   {
-  case FG_REMOVESTATIC:
   case FG_REMOVECHILD:
     if(((fgChild*)msg->other)->parent==(fgChild*)self)
       return fgWindow_Message(&self->window,msg);
     return fgWindow_Message(&self->region,msg);
-  case FG_ADDSTATIC:
   case FG_ADDCHILD:
     if(msg->otheraux==1)
       return fgWindow_Message(&self->window,msg);

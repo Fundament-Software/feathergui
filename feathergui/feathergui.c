@@ -13,6 +13,7 @@ void FG_FASTCALL fgVector_Destroy(fgVector* self)
 {
   if(self->p) free(self->p);
 }
+// TODO: Speed this up using a custom simplistic heap allocator
 void FG_FASTCALL fgVector_SetSize(fgVector* self, FG_UINT length, FG_UINT size)
 {
   self->s=length*size;
@@ -73,25 +74,33 @@ void FG_FASTCALL ResolveRect(const fgChild* self, AbsRect* out)
   out->top -= center.y;
   out->right -= center.x;
   out->bottom -= center.y;
+  out->left += self->margin.left;
+  out->top += self->margin.top;
+  out->right += self->margin.right;
+  out->bottom += self->margin.bottom;
 }
 
-void FG_FASTCALL ResolveRectCache(AbsRect* BSS_RESTRICT r, const fgElement* elem, const AbsRect* BSS_RESTRICT last)
+void FG_FASTCALL ResolveRectCache(AbsRect* BSS_RESTRICT out, const fgChild* elem, const AbsRect* BSS_RESTRICT last)
 {
-  AbsVec center = { elem->center.x.abs, elem->center.y.abs };
-  const CRect* v=&elem->area;
-  assert(r!=0 && elem!=0 && last!=0);
-  r->left = lerp(last->left,last->right,v->left.rel)+v->left.abs;
-  r->top = lerp(last->top,last->bottom,v->top.rel)+v->top.abs;
-  r->right = lerp(last->left,last->right,v->right.rel)+v->right.abs;
-  r->bottom = lerp(last->top,last->bottom,v->bottom.rel)+v->bottom.abs;
+  AbsVec center = { elem->element.center.x.abs, elem->element.center.y.abs };
+  const CRect* v=&elem->element.area;
+  assert(out!=0 && elem!=0 && last!=0);
+  out->left = lerp(last->left, last->right, v->left.rel)+v->left.abs;
+  out->top = lerp(last->top, last->bottom, v->top.rel)+v->top.abs;
+  out->right = lerp(last->left, last->right, v->right.rel)+v->right.abs;
+  out->bottom = lerp(last->top, last->bottom, v->bottom.rel)+v->bottom.abs;
   
-  center.x += (v->right.abs-v->left.abs)*elem->center.x.rel;
-  center.y += (v->bottom.abs-v->top.abs)*elem->center.y.rel;
+  center.x += (v->right.abs-v->left.abs)*elem->element.center.x.rel;
+  center.y += (v->bottom.abs-v->top.abs)*elem->element.center.y.rel;
   //center = ResolveVec(&,r); // We can't use this because the center is relative to the DIMENSIONS, not the actual position.
-  r->left -= center.x;
-  r->top -= center.y;
-  r->right -= center.x;
-  r->bottom -= center.y;
+  out->left -= center.x;
+  out->top -= center.y;
+  out->right -= center.x;
+  out->bottom -= center.y;
+  out->left += elem->margin.left;
+  out->top += elem->margin.top;
+  out->right += elem->margin.right;
+  out->bottom += elem->margin.bottom;
 }
 
 // This uses a standard inclusive-exclusive rectangle interpretation.
@@ -104,7 +113,7 @@ char FG_FASTCALL HitAbsRect(const AbsRect* r, FABS x, FABS y)
 char FG_FASTCALL MsgHitAbsRect(const FG_Msg* msg, const AbsRect* r)
 {
   assert(msg!=0 && r!=0);
-  return HitAbsRect(r,msg->x,msg->y);
+  return HitAbsRect(r,(FABS)msg->x,(FABS)msg->y);
 }
 
 char FG_FASTCALL MsgHitCRect(const FG_Msg* msg, const fgChild* child)
@@ -133,11 +142,14 @@ void FG_FASTCALL LList_ChangeOrder(fgChild* self, fgChild** root, fgChild** last
       prev = cur;
       cur = cur->next;
   }
-  cur = self->prev;
-
+  while(prev != 0 && !(((self->flags&flag) < (prev->flags&flag)) || ((self->order < prev->order) && (self->flags&flag) == (prev->flags&flag))))
+  {
+      cur = prev;
+      prev = prev->prev;
+  }
   
-  if(cur==self->next) return; // we didn't move anywhere
-  LList_Remove(self);
+  if(cur==self->next) { assert(prev==self->prev); return; } // we didn't move anywhere
+  LList_Remove(self,root,last);
   self->next = cur;
   self->prev = prev;
   if(prev) prev->next=self;
@@ -199,6 +211,11 @@ void FG_FASTCALL fgChild_Destroy(fgChild* self)
 void FG_FASTCALL fgChild_SetParent(fgChild* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent, fgFlag flag)
 {
   assert(self!=0);
+  if(self->parent==parent) { // If this is true, we just need to make sure the ordering is valid
+    LList_ChangeOrder(self,&parent->root,&parent->last,flag);
+    return;
+  }
+
   if(self->parent!=0)
     LList_Remove(self,&self->parent->root,&self->parent->last); // Remove ourselves from our parent
 
@@ -244,7 +261,7 @@ void FG_FASTCALL MoveCRect(AbsVec v, CRect* r)
   r->right.abs=v.y+dy;
 }
 
-char FG_FASTCALL CompChildOrder(const fgChild* l, const fgChild* r)
+/*char FG_FASTCALL CompChildOrder(const fgChild* l, const fgChild* r)
 {
   const fgChild* cur;
   unsigned int ldepth=0,rdepth=0,diff;
@@ -268,7 +285,8 @@ char FG_FASTCALL CompChildOrder(const fgChild* l, const fgChild* r)
   }
 
   return (l->order>r->order) - (l->order<r->order);
-}
+}*/
+
 void FG_FASTCALL VirtualFreeChild(fgChild* self)
 {
   assert(self!=0);

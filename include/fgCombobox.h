@@ -6,6 +6,7 @@
 
 #include "fgTextbox.h"
 #include "fgButton.h"
+#include "fgList.h"
 
 #ifdef  __cplusplus
 extern "C" {
@@ -13,8 +14,9 @@ extern "C" {
 
 // A combobox is a dropdown that can optionally let the user enter their own choice into the box.
 typedef struct {
-  fgTextbox box; // The textbox's context menu is the actual dropdown list, so elements are added to that (this is done automatically)
+  fgTextbox box;
   fgButton button;
+  fgList dropdown;
 } fgCombobox;
 
 FG_EXTERN fgWindow* FG_FASTCALL fgCombobox_Create(fgTriplet* item, fgWindow* parent, const fgElement* element, FG_UINT id, fgFlag flags);

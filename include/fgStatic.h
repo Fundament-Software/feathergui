@@ -25,6 +25,7 @@ enum FG_RENDERMSG
   FG_RSHOW,
   FG_RADDCHILD,
   FG_RREMOVECHILD,
+  FG_RSETPARENT,
   FG_RSETAREA,
   FG_RSETELEMENT,
   FG_RSETTEXT,
@@ -68,57 +69,28 @@ typedef struct __RENDERABLE {
   fgChild element;
   void (FG_FASTCALL *message)(struct __RENDERABLE* self, unsigned char type, void* arg, int other);
   struct __RENDERABLE* (FG_FASTCALL *clone)(struct __RENDERABLE* self);
-  struct __WINDOW* parent;
   void* userdata;
 } fgStatic;
-
-typedef struct __RENDERABLE_DEF {
-  fgElement element;
-  int order; // order relative to other windows or statics
-  fgFlag flags;
-} fgStaticDef;
-
-typedef struct __IMAGE_DEF {
-  fgStaticDef def;
-  unsigned int color;
-  const char* data;
-  size_t length; // If length is 0, data is treated as a filepath
-  CRect uv;
-} fgImageDef;
-
-typedef struct __TEXT_DEF {
-  fgStaticDef def;
-  unsigned int color;
-  const char* text;
-  const char* font;
-  unsigned short fontsize;
-  unsigned short lineheight;
-} fgTextDef;
 
 FG_EXTERN void FG_FASTCALL fgStatic_Init(fgStatic* self);
 FG_EXTERN void FG_FASTCALL fgStatic_Destroy(fgStatic* self);
 FG_EXTERN void FG_FASTCALL fgStatic_Message(fgStatic* self, unsigned char type, void* arg, int other);
-FG_EXTERN void FG_FASTCALL fgStatic_SetWindow(fgStatic* self, struct __WINDOW* window);
 FG_EXTERN void FG_FASTCALL fgStatic_RemoveParent(fgStatic* self);
 FG_EXTERN void FG_FASTCALL fgStatic_NotifyParent(fgStatic* self);
 FG_EXTERN void FG_FASTCALL fgStatic_Clone(fgStatic* self, fgStatic* from); // Clones information and all the children from "from" to "self"
 FG_EXTERN void FG_FASTCALL fgStatic_SetParent(fgStatic* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent);
 
 FG_EXTERN fgStatic* FG_FASTCALL fgLoadImage(const char* path);
-FG_EXTERN fgStatic* FG_FASTCALL fgLoadImageData(const void* data, size_t length);
-FG_EXTERN fgStatic* FG_FASTCALL fgLoadImageDef(const fgImageDef* def);
-FG_EXTERN fgStatic* FG_FASTCALL fgLoadVector(const char* path);
-FG_EXTERN fgStatic* FG_FASTCALL fgLoadVectorData(const void* data, size_t length);
+FG_EXTERN fgStatic* FG_FASTCALL fgLoadImageData(const void* data, size_t length, fgFlag flags);
+FG_EXTERN void* FG_FASTCALL fgLoadImageDef(fgFlag flags, const char* data, size_t length, unsigned int color, const CRect* uv);
 FG_EXTERN fgStatic* FG_FASTCALL fgLoadText(const char* text, fgFlag flags, const char* font, unsigned short fontsize, unsigned short lineheight);
-FG_EXTERN fgStatic* FG_FASTCALL fgLoadTextDef(const fgTextDef* def);
+FG_EXTERN void* FG_FASTCALL fgLoadTextDef(fgFlag flags, const char* text, const char* font, unsigned short fontsize, unsigned short lineheight, unsigned int color);
+FG_EXTERN fgStatic* FG_FASTCALL fgLoadDefaultText(const char* text);
+//FG_EXTERN fgStatic* FG_FASTCALL fgLoadVector(const char* path);
+//FG_EXTERN fgStatic* FG_FASTCALL fgLoadVectorData(const void* data, size_t length);
 FG_EXTERN fgStatic* FG_FASTCALL fgEmptyStatic(fgFlag flags);
-
-// An item represented by both text and an image is extremely common, so we define this helper struct to make things simpler
-typedef struct {
-  fgStatic* image; // This is the image displayed alongside the item
-  const char* text; // This is the item text itself
-  const char* auxtext; // This represents either the shortcut key (for menu items) or a tooltip, or it may be ignored.
-} fgTriplet;
+FG_EXTERN fgStatic* FG_FASTCALL fgLoadDef(void* def, const fgElement* element, int order);
+FG_EXTERN void FG_FASTCALL fgDestroyDef(void* def);
 
 #ifdef  __cplusplus
 }

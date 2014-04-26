@@ -31,6 +31,10 @@ enum FG_WINFLAGS
 
 struct FG_MENU;
 
+struct FG_WINDOWSKIN {
+  fgStatic* root; // Holds all statics that should be added to a window and have no logic associated with them.
+};
+
 // Defines the base GUI element, a window. This is not an actual top level window.
 typedef struct __WINDOW {
   fgChild element;
@@ -39,12 +43,9 @@ typedef struct __WINDOW {
   fgStatic* rlist; // root node for statics
   fgStatic* rlast; // last node for statics 
   struct FG_MENU* contextmenu;
+  const struct FG_WINDOWSKIN* skin; // skin reference
   void* userdata;
 } fgWindow;
-
-struct FG_WINDOWSKIN {
-  fgStatic* root; // Holds all statics that should be added to a window and have no logic associated with them.
-};
 
 FG_EXTERN fgWindow* fgFocusedWindow;
 FG_EXTERN fgWindow* fgLastHover; // Last window the mouse moved over, used to generate MOUSEON and MOUSEOFF events

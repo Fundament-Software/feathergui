@@ -1,4 +1,4 @@
-// Copyright ©2013 Black Sphere Studios
+// Copyright ©2014 Black Sphere Studios
 // For conditions of distribution and use, see copyright notice in "bss_util.h"
 
 #ifndef __BSS_COMPILER_H__
@@ -42,9 +42,11 @@
 #define BSS_COMPILER_FASTCALL
 #define BSS_COMPILER_STDCALL
 #define BSS_COMPILER_NAKED
-#define BSS_FORCEINLINE
+#define BSS_FORCEINLINE inline
 #define BSS_RESTRICT __restrict__
 #define BSS_ALIGNED(sn, n) sn
+#define MSC_FASTCALL BSS_FASTCALL
+#define GCC_FASTCALL 
 
 # elif defined __GNUC__ // GCC
 #define BSS_COMPILER_GCC
@@ -58,8 +60,9 @@
 #define BSS_COMPILER_NAKED __attribute__((naked)) // Will only work on ARM, AVR, MCORE, RX and SPU. 
 #define BSS_FORCEINLINE __attribute__((always_inline))
 #define BSS_RESTRICT __restrict__
-#define BSS_ALIGN(n) __attribute__((aligned(n)));
+#define BSS_ALIGN(n) __attribute__((aligned(n)))
 #define BSS_ALIGNED(sn, n) sn BSS_ALIGN(n)
+#define BSS_VARIADIC_TEMPLATES
 #ifndef __int8
 #define __int8 char
 #endif
@@ -73,6 +76,8 @@
 #define __int64 long long
 #endif
 //typedef __int128 __int128; // GCC doesn't have __int64/32/16/8, but it does have __int128 for whatever reason.
+#define MSC_FASTCALL 
+#define GCC_FASTCALL BSS_FASTCALL
 
 #elif defined _MSC_VER // VC++
 #define BSS_COMPILER_MSC
@@ -88,9 +93,13 @@
 #define BSS_RESTRICT __restrict
 #define BSS_ALIGN(n) __declspec(align(n))
 #define BSS_ALIGNED(sn, n) BSS_ALIGN(n) sn
+#define BSS_VERIFY_HEAP _ASSERTE(_CrtCheckMemory());
+#define FUNCPTRCC(m,CC) CC m
+#define MSC_FASTCALL BSS_FASTCALL
+#define GCC_FASTCALL 
 
-#ifndef BSS_CPU_x86 // The only platform VC++ supports inline assembly on is x86, because its a piece of shit.
-#define BSS_MSC_NOASM
+#if _MSC_VER >= 1800
+#define BSS_VARIADIC_TEMPLATES
 #endif
 #endif
 
@@ -98,8 +107,8 @@
 #define BSS_PLATFORM_MINGW // Should also define WIN32, use only for minGW specific bugs
 #endif
 
-#define BSS_ALIGNED_STRUCT(n) BSS_ALIGNED(struct,n)
-#define BSS_ALIGNED_CLASS(n) BSS_ALIGNED(class,n)
+#define BSS_ALIGNED_STRUCT(n) struct BSS_ALIGN(n)
+#define BSS_ALIGNED_CLASS(n) class BSS_ALIGN(n)
 
 // Platform detection
 #if defined(WIN32) || defined(_WIN32) || defined(_WIN64) || defined(__TOS_WIN__) || defined(__WINDOWS__)
@@ -157,9 +166,14 @@
 #endif
 
 // Debug detection
+#ifdef BSS_COMPILER_GCC
+#ifndef NDEBUG
+#define BSS_DEBUG
+#endif
+#else
 #if defined(DEBUG) || defined(_DEBUG)
 #define BSS_DEBUG
 #endif
-
+#endif
 
 #endif

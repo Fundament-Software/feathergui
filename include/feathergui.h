@@ -89,13 +89,13 @@ typedef struct __VECTOR {
 
 FG_EXTERN void FG_FASTCALL fgVector_Init(fgVector* self); // Zeros everything
 FG_EXTERN void FG_FASTCALL fgVector_Destroy(fgVector* self);
-FG_EXTERN void FG_FASTCALL fgVector_SetSize(fgVector* self, FG_UINT length, FG_UINT size); // Grows or shrinks the array. self->l is shrunk if necessary.
+FG_EXTERN void FG_FASTCALL fgVector_SetSize(fgVector* self, FG_UINT length, FG_UINT size); // Grows or shrinks the array. self.l is shrunk if necessary.
 FG_EXTERN void FG_FASTCALL fgVector_CheckSize(fgVector* self, FG_UINT size); // Ensures the vector is large enough to hold at least one more item.
 FG_EXTERN void FG_FASTCALL fgVector_Remove(fgVector* self, FG_UINT index, FG_UINT size); // Removes element at the given index.
 
-#define fgVector_Add(self, item, TYPE) fgVector_CheckSize(self,sizeof(TYPE)); ((TYPE*)self->p)[self->l++]=item;
-#define fgVector_Insert(self, item, index, TYPE) fgVector_CheckSize(self,sizeof(TYPE)); memmove(((TYPE*)self->p)+(index+1)),((TYPE*)self->p)+index,((self->l++)-index)*size); ((TYPE*)self->p)[index]=item;
-#define fgVector_Get(self, index, TYPE) ((TYPE*)self->p)[index]
+#define fgVector_Add(self, item, TYPE) fgVector_CheckSize(&self,sizeof(TYPE)); ((TYPE*)self.p)[self.l++]=item;
+#define fgVector_Insert(self, item, index, TYPE) fgVector_CheckSize(&self,sizeof(TYPE)); if(self.l-index>0) { memmove(((TYPE*)self.p)+(index+1),((TYPE*)self.p)+index,((self.l++)-index)*sizeof(TYPE)); } ((TYPE*)self.p)[index]=item;
+#define fgVector_Get(self, index, TYPE) ((TYPE*)self.p)[index]
 
 typedef struct {
   CRect area;
@@ -112,6 +112,7 @@ typedef struct _FG_CHILD {
   struct _FG_CHILD* last; // children list last
   struct _FG_CHILD* next;
   struct _FG_CHILD* prev;
+  AbsRect margin; // defines the amount of internal margin. Bottom and right are not automatically negated, so a 5 pixel margin would be 5,5,-5,-5
   int order; // order relative to other windows or statics
   fgFlag flags;
 } fgChild;
@@ -138,16 +139,16 @@ enum FG_MSGTYPE
   FG_SETPARENT,
   FG_SETFLAG, // Send in the flag in the first int arg, then set it to on or off (1 or 0) in the second argument
   FG_SETFLAGS, // Sets all the flags to the first int arg.
-  FG_SETORDER, // Sets the order of a window
+  FG_SETORDER, // Sets the order of a window in the otherint argument
   FG_SETCAPTION, 
-  FG_SETALPHA, // Used so an entire widget can be made to fade in or out.
+  FG_SETALPHA, // Used so an entire widget can be made to fade in or out. (Support is not guaranteed)
+  FG_SETMARGIN,
+  FG_SETCOLUMNS, // If the second pointer is 0, the number of columns is set to the first int. Otherwise, the first int is treated as a column index number, which has it's width set to the Coord pointer to by the second pointer
   FG_GETCLASSNAME, // Returns a unique string identifier for the class
-  FG_GETITEM,
+  FG_GETITEM, // If the control has columns, the column number is specified in the high-order word
+  FG_GETROW,
   FG_ADDITEM, // Used for anything involving items (menus, lists, etc)
-  FG_ADDSUBMENU,
-  FG_ADDCHILD, // Pass an FG_Msg with this type and set the other pointer to the child that should be added. Must be an fgWindow* pointer.
-  FG_ADDSTATIC, // Send a fgStatic in other with an optional ID in otheraux that can optionally be used to signify special behavior
-  FG_REMOVESTATIC,
+  FG_ADDCHILD, // Pass an FG_Msg with this type and set the other pointer to the child that should be added. Can be either an fgWindow or an fgStatic
   FG_REMOVECHILD,
   FG_REMOVEITEM,
   FG_SHOW, // Send an otherint equal to 0 to hide, otherwise its made visible
@@ -182,9 +183,9 @@ typedef struct __FG_MSG {
     };
     struct { float joyvalue; short joyaxis; }; // JOYAXIS
     struct { char joydown; short joybutton; }; // JOYBUTTON
-    struct { void* other; unsigned int otheraux; }; // Used by any generic messages (FG_ADDCHILD, FG_SETPARENT, etc.)
+    struct { void* other; size_t otheraux; }; // Used by any generic messages (FG_ADDCHILD, FG_SETPARENT, etc.)
     struct { void* other1; void* other2; }; // Used by anything requiring 2 pointers, possibly for a return value.
-    struct { int otherint; int otherintaux; }; // Used by any generic message that want an int (FG_SETCLIP, FG_SETCENTERED, etc.)
+    struct { ptrdiff_t otherint; ptrdiff_t otherintaux; }; // Used by any generic message that want an int (FG_SETCLIP, FG_SETCENTERED, etc.)
   };
   unsigned char type;
 } FG_Msg;
@@ -192,14 +193,12 @@ typedef struct __FG_MSG {
 FG_EXTERN void FG_FASTCALL fgChild_Init(fgChild* self);
 FG_EXTERN void FG_FASTCALL fgChild_Destroy(fgChild* self);
 FG_EXTERN void FG_FASTCALL fgChild_SetParent(fgChild* BSS_RESTRICT self, fgChild* BSS_RESTRICT parent, fgFlag flag);
-FG_EXTERN void FG_FASTCALL fgChild_ExpandX(fgChild* self, fgElement* elem);
-FG_EXTERN void FG_FASTCALL fgChild_ExpandY(fgChild* self, fgElement* elem);
 
 FG_EXTERN AbsVec FG_FASTCALL ResolveVec(const CVec* v, const AbsRect* last);
 FG_EXTERN void FG_FASTCALL ResolveRect(const fgChild* self, AbsRect* out);
-FG_EXTERN void FG_FASTCALL ResolveRectCache(AbsRect* BSS_RESTRICT r, const fgElement* elem, const AbsRect* BSS_RESTRICT last);
+FG_EXTERN void FG_FASTCALL ResolveRectCache(AbsRect* BSS_RESTRICT r, const fgChild* elem, const AbsRect* BSS_RESTRICT last);
 FG_EXTERN char FG_FASTCALL CompareCRects(const CRect* l, const CRect* r); // Returns 0 if both are the same or 1 otherwise
-FG_EXTERN char FG_FASTCALL CompChildOrder(const fgChild* l, const fgChild* r);
+//FG_EXTERN char FG_FASTCALL CompChildOrder(const fgChild* l, const fgChild* r);
 FG_EXTERN void FG_FASTCALL MoveCRect(AbsVec v, CRect* r);
 FG_EXTERN char FG_FASTCALL HitAbsRect(const AbsRect* r, FABS x, FABS y);
 //FG_EXTERN void FG_FASTCALL ToIntAbsRect(const AbsRect* r, int target[static 4]);
@@ -210,6 +209,7 @@ FG_EXTERN char FG_FASTCALL MsgHitCRect(const FG_Msg* msg, const fgChild* child);
 FG_EXTERN void FG_FASTCALL LList_Remove(fgChild* self, fgChild** root, fgChild** last);
 FG_EXTERN void FG_FASTCALL LList_Add(fgChild* self, fgChild** root, fgChild** last, fgFlag flag);
 FG_EXTERN void FG_FASTCALL LList_Insert(fgChild* self, fgChild* target, fgChild** last);
+FG_EXTERN void FG_FASTCALL LList_ChangeOrder(fgChild* self, fgChild** root, fgChild** last, fgFlag flag);
 FG_EXTERN void FG_FASTCALL VirtualFreeChild(fgChild* self);
 
 #ifdef  __cplusplus
