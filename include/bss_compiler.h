@@ -144,6 +144,7 @@
 
 #define BSS_ALIGNED_STRUCT(n) struct BSS_ALIGN(n)
 #define BSS_ALIGNED_CLASS(n) class BSS_ALIGN(n)
+#define BSS_ALIGNED_UNION(n) union BSS_ALIGN(n)
 
 // Platform detection
 #if defined(WIN32) || defined(_WIN32) || defined(_WIN64) || defined(__TOS_WIN__) || defined(__WINDOWS__)
