@@ -4,15 +4,13 @@ local nuklear = require 'nuklear'
 
 local M = {}
 
+M.binding = require 'feather.binding'
+
 -- object behavior for the body of an element generation.
 local body_mt = {}
 
 -- The length operator returns the number of child elements
 function body_mt:__len()
-  print("getting body length")
-  terralib.printraw(self)
-  print(self.elems)
-  print(#self.elems)
   return #self.elems
 end
 
@@ -32,7 +30,6 @@ end
 
 -- Take an element and generate the drawing code for it
 local function elem_generate(self, ctx, bind)
-  terralib.printraw(self)
   --TODO: resolve bindings against the data in bind
   local bindings = {}
   for k, v in pairs(self.bindings) do
@@ -75,16 +72,14 @@ end
 
 local event_mt = { __index = {} }
 function event_mt.__index:bind(data)
-  return macro(function(...)
-      return `[genpath(data, self.path)]:[self.name]([{...}])
-               end
-  )
+  return data:event(self.path, self.name)
 end
 function event_mt:__tostring()
   return "event(."..table.concat(self.path, ".")..":"..self.name..")"
 end
 
-local function event(desc)
+local function event(desc, dest_type)
+  assert(dest_type == "event", "tried to bind an event to a non-event slot")
   local path, eventname = string.match(desc, "([%.a-zA-Z_0-9]*):([a-zA-Z_][a-zA-Z_0-9]*)")
   assert(path, "invalid event specifier")
   local splitpath = {}
@@ -96,23 +91,21 @@ end
 
 local bind_mt = { __index = {} }
 function bind_mt.__index:bind(data)
-  return macro(function()
-      return `[genpath(data, self.path)]
-               end
-  )
+  return data:property(self.path, self.dest_type)
 end
 function bind_mt:__tostring()
-  return "bind(."..table.concat(self.path, ".")..")"
+  return "bind(."..table.concat(self.path, ".")..", "..tostring(self.dest_type)..")"
 end
 
-local function bind(desc)
-  local path = string.match(desc, "((.[a-zA-Z_][a-zA-Z_0-9]*)*)")
+local function bind(desc, dest_type)
+  local path = string.match(desc, "^([%.a-zA-Z_0-9]*)$")
   assert(path, ("invalid bind specifier %q"):format(desc))
   local splitpath = {}
-  for segment in string.gmatch(path, ".([a-zA-Z_][a-zA-Z_0-9]*)") do
+  for segment in string.gmatch(path, "%.([a-zA-Z_][a-zA-Z_0-9]*)") do
+    print("path segment", segment)
     table.insert(splitpath, segment)
   end
-  return setmetatable({path = splitpath, name = eventname}, event_mt)
+  return setmetatable({path = splitpath, dest_type = dest_type}, bind_mt)
 end
 
 local function model(desc)
@@ -129,7 +122,7 @@ local binding_handlers = {
   model_ = model,
   [""] = literal
 }
-local function binding_dispatch(name, value)
+local function binding_dispatch(name, value, binds)
   print("dispatching binding", name, value)
   local prefix, basename
   if name:sub(1, 3) == "on_" then prefix, basename = "on_", name:sub(4)
@@ -140,8 +133,9 @@ local function binding_dispatch(name, value)
   -- be sad about not having lpeg and lua patterns being limited.
   -- local prefix, basename = string.match(name, "(on_|bind_|model_|)([a-zA-Z_][a-zA-Z_0-9]*)")
   print("name breakdown", prefix, basename)
+  --terralib.printraw(binds)
   assert(prefix, ("invalid binding name %q"):format(name))
-  return basename, binding_handlers[prefix](value)
+  return basename, binding_handlers[prefix](value, binds[basename][1])
 end
 
 -- when a template is called with a table descriptor, it produces the element described
@@ -154,7 +148,7 @@ function template_mt:__call(desc)
     if type(k) == "number" then
       res.body[k] = v
     elseif type(k) == "string" then
-      local name, binding = binding_dispatch(k, v)
+      local name, binding = binding_dispatch(k, v, self.binds)
       print("binding", name, binding)
       res.bindings[name] = binding
     else
@@ -182,6 +176,18 @@ end
 --this is a low level UI used for creating elements that call drawing and layout code directly
 --a higher level function will allow creation from other UI elements
 local function template_build(desc)
+  --terralib.printraw(desc)
+  for k, v in pairs(desc.binds) do
+    if type(k) ~= "string" then
+      error("invalid slot name in template, must be a string")
+    end
+    if type(v) ~= "table" then
+      error "invalid slot descriptor in template, must be a table"
+    end
+    if type(v[1]) ~= "string" then
+      error "invalid slot descriptor in template, must have the first entry be a string naming the type"
+    end
+  end
   local self = {
     binds = desc.binds,
     generator = desc.generator,
@@ -192,7 +198,7 @@ local function template_build(desc)
 end
 
 -- string value and length
-local terra strlen_count(str: &uint8): int
+local terra strlen_count(str: &int8): int
   var len: int = 0
   while str[len] ~= 0 do len = len + 1 end
   return len
@@ -274,23 +280,27 @@ M.layout_row_dynamic = template_build {
 
 M.text = template_build {
   binds = {
-    text = {},
+    text = {"string"},
     align = {"number", 0x11}
   },
   generator = function(ctx, desc, body)
     return quote
-      nuklear.nk_text(ctx, strlen(desc.text()), desc.align)
+      var str, len = strlen(desc.text())
+      nuklear.nk_text(ctx, str, len, desc.align())
            end
   end
 }
 
 M.text_wrap = template_build {
   binds = {
-    text = {},
+    text = {"string"},
     --align = {"number", 0x11}
   },
   generator = function(ctx, desc, body)
-    return quote nuklear.nk_text_wrap(ctx, strlen(desc.text())) end
+    return quote
+      var str, len = strlen(desc.text())
+      nuklear.nk_text_wrap(ctx, str, len)
+           end
   end
 }
 
@@ -310,12 +320,14 @@ make_root_type = terralib.memoize(make_root_type)
 --when the ui template is called, rather than producing an element, it produces a UI outline
 --the UI Outline can be called like a function with a specific datatype which will cause it
 --to populate the bindings from that datatype and generate the specialized render code.
-function ui_mt:__call(datatype)
-  local root_type = make_root_type(datatype)
+function ui_mt:__call(binding)
+  terralib.printraw(binding)
+  terralib.printraw(binding:root_type())
+  local root_type = make_root_type(binding:root_type())
   local res = {}
 
   -- tag the resulting UI object with the types it uses
-  res.bind_type = datatype
+  res.bind_type = binding:root_type()
   res.app_type = root_type
 
   -- The generated event loop to perform the rendering and events of the UI
@@ -330,9 +342,13 @@ function ui_mt:__call(datatype)
     end
 
     [
-      self.body:map(function(elem)
-          return elem:generate(ctx, `data.data)
-      end)
+        --add let syntax to terra eventually
+      (function(data)
+          local bound_root = binding:root(`data.data)
+          return self.body:map(function(elem)
+              return elem:generate(ctx, bound_root)
+          end)
+      end)(data)
     ]
 
     nuklear.nk_end(ctx)
@@ -361,13 +377,13 @@ function M.template(desc)
 end
 
 --Generate the code to launch the UI from a specific outline and root binding type
-function M.launchUI(ui, datatype)
-  local ui_compiled = ui(datatype)
+function M.launchUI(ui, binding)
+  local ui_compiled = ui(binding)
 
   --DEBUG: show the code for the resulting UI event loop
   ui_compiled.mainfunc:printpretty()
   --The generated code to start the UI
-  return terra(data: datatype)
+  return terra(data: binding:root_type())
     var nkcx: nuklear.nkc
     var root: ui_compiled.app_type
     root.nkc = &nkcx

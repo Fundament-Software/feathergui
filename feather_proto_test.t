@@ -1,5 +1,12 @@
+terralib.nativetarget = terralib.newtarget {
+   Triple = "x86_64-pc-linux-gnu"; -- LLVM target triple
+   CPU = "x86-64";  -- LLVM CPU name,
+                                           }
 
-local feather = require 'feather_proto'
+print(terralib.includepath)
+
+
+local feather = require 'feather'
 
 local test_ui = feather.ui {
   feather.window {
@@ -23,6 +30,15 @@ local test_ui = feather.ui {
       feather.text_wrap {
         text = "test text that is much longer and might overflow the box"
       }
+    },
+    feather.layout_row_dynamic {
+      height = 50,
+      feather.text_wrap {
+        text = "Count: "
+      },
+      feather.text_wrap {
+        bind_text = ".count"
+      }
     }
   }
 }
@@ -43,7 +59,9 @@ terra count_data:dec()
   self.count = self.count - 1
 end
 
-local test_launch = feather.launchUI(test_ui, &count_data)
+local bindings = feather.binding(&count_data)
+
+local test_launch = feather.launchUI(test_ui, bindings)
 
 terra main()
   var data: count_data
@@ -53,7 +71,7 @@ terra main()
   return 0
 end
 
-print(main())
+--print(main())
 
 
-terralib.saveobj("feather_test.o", {main = main}, {"-l", "nkc", "-L.", "-L", "/nix/store/zbafyh2j4mw1gd19mr14062kc0jkazyw-user-environment/lib/", "-l", "X11", "-lm"})
+terralib.saveobj("feather_test", {main = main}, {"nkc.o", "-L.", "-l", "X11", "-lm"})
