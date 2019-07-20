@@ -74,4 +74,4 @@ end
 --print(main())
 
 
-terralib.saveobj("feather_test", {main = main}, {"nkc.o", "-L.", "-l", "X11", "-lm"})
+terralib.saveobj("feather_test", {main = main}, {"nkc.o", "-L.", "-l", "X11", "-lm", "-g"})
