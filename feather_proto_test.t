@@ -60,8 +60,16 @@ terra count_data:dec()
 end
 
 local bindings = feather.binding(&count_data)
+local cppbindings = feather.binding.cpp_static {
+  root_type = "count_data",
+  preamble = [[
+#include <iostream>
+#include "feather_proto_test.hpp"
+]]
+}
 
 local test_launch = feather.launchUI(test_ui, bindings)
+local cpp_launch = feather.launchUI(test_ui, cppbindings)
 
 terra main()
   var data: count_data
@@ -75,3 +83,8 @@ end
 
 
 terralib.saveobj("feather_test", {main = main}, {"nkc.o", "-L.", "-l", "X11", "-lm", "-g"})
+
+cppbindings:export_fun("void", "launch_ui", {"count_data *"})
+cppbindings:write_source("feather_test_gen.cpp")
+cppbindings:write_include("feather_test_gen.hpp")
+terralib.saveobj("feather_test_gen.o", {launch_ui = cpp_launch}, {"-L.", "-l", "X11", "-lm", "-g"})

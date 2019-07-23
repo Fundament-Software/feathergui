@@ -1,3 +1,6 @@
 [submodule "nuklear_cross"]
 	path = nuklear_cross
 	url = https://github.com/DeXP/nuklear_cross/
+[submodule "LuLPeg"]
+	path = LuLPeg
+	url = https://github.com/pygy/LuLPeg

@@ -2,6 +2,7 @@
 
 local bindings = {
   ['terra'] = require 'feather.binding.terra',
+  cpp_static = require 'feather.binding.cpp_static'
 }
 
 setmetatable(bindings, {
