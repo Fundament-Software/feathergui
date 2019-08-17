@@ -12,17 +12,9 @@ end
 
 terralib.includepath =  terralib.vshome .. [[include;]] .. sdkroot .. [[Include\]]..sdkversion..[[\ucrt;]] .. sdkroot .. [[Include\]]..sdkversion..[[\shared;]] .. sdkroot .. [[Include\]]..sdkversion..[[\um;]]
 
-fgFlag = uint
-fgError = int
-fgDelegate = &opaque -> {}
-fgVersion = { 0, 1, 0 }
-
-fgColor = uint32
-
-require 'feather.rect'
-require 'feather.backend'
-require 'feather.test'
+local Backend = require 'feather.backend'
+local Test = require 'feather.test'
 
 local flags = {"\\legacy_stdio_definitions.lib"}
-terralib.saveobj("feather.exe", {main = main}, flags)
-main(0, nil)
+terralib.saveobj("feather.exe", {main = Test.main}, flags)
+Test.main(0, nil)

@@ -77,11 +77,4 @@ local Rect = terralib.memoize(function(T)
   return s
 end)
 
-fgRect = Rect(float)
-
-struct URect {
-  abs : fgRect 
-  rel : fgRect
-}
-
 return Rect

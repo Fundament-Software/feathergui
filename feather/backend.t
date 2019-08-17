@@ -2,12 +2,13 @@ local C = terralib.includecstring [[
   #include <string.h>
 ]]
 
+local B = {}
+local F = require 'feather.shared'
 local Flags = require 'feather.flags'
 local Enum = require 'feather.enum'
-local Color = require 'feather.color'
-require 'feather.os'
+local OS = require 'feather.os'
 
-local BACKEND_FEATURES = Flags{
+B.Features = Flags{
   "TEXT_ANTIALIAS", 
   "TEXT_SUBPIXEL",
   "TEXT_BLUR",
@@ -35,7 +36,7 @@ local BACKEND_FEATURES = Flags{
   "BACKGROUND_OPACITY",
   "IMMEDIATE_MODE"}
 
-local BACKEND_FORMATS = Enum{
+B.Formats = Enum{
   "GRADIENT",
   "BMP",
   "JPG",
@@ -53,15 +54,15 @@ local BACKEND_FORMATS = Enum{
   "MKV",
   "WEBM"}
 
-BACKEND_FORMATS.UNKNOWN = `0xff
+B.Formats.UNKNOWN = `0xff
 
-local TEXT_ANTIALIASING = Enum{
+B.AntiAliasing = Enum{
   "NO_AA",
   "AA",
   "LCD",
   "LCD_V"}
 
-local CLIPBOARD_FORMATS = Enum{
+B.Clipboard = Enum{
   "NONE",
   "TEXT",
   "WAVE",
@@ -71,79 +72,79 @@ local CLIPBOARD_FORMATS = Enum{
   "CUSTOM",
   "ALL"}
 
-local FG_CURSOR = Enum{
-  "FGCURSOR_NONE",
-  "FGCURSOR_ARROW",
-  "FGCURSOR_IBEAM",
-  "FGCURSOR_CROSS",
-  "FGCURSOR_WAIT",
-  "FGCURSOR_HAND",
-  "FGCURSOR_RESIZENS",
-  "FGCURSOR_RESIZEWE",
-  "FGCURSOR_RESIZENWSE",
-  "FGCURSOR_RESIZENESW",
-  "FGCURSOR_RESIZEALL",
-  "FGCURSOR_NO",
-  "FGCURSOR_HELP",
-  "FGCURSOR_DRAG",
-  "FGCURSOR_CUSTOM"}
+B.Cursor = Enum{
+  "NONE",
+  "ARROW",
+  "IBEAM",
+  "CROSS",
+  "WAIT",
+  "HAND",
+  "RESIZENS",
+  "RESIZEWE",
+  "RESIZENWSE",
+  "RESIZENESW",
+  "RESIZEALL",
+  "NO",
+  "HELP",
+  "DRAG",
+  "CUSTOM"}
 
-struct fgData {
+struct B.Data {
   data : &opaque
 }
 
-struct fgFont {
-  data : fgData
-  dpi : fgVec
+struct B.Font {
+  data : B.Data
+  dpi : F.Vec
   baseline : float
   lineheight : float
   pt : uint
 }
 
-struct fgAsset {
-  data : fgData
-  size : fgVeci
-  dpi : fgVec
-  format : BACKEND_FORMATS
+struct B.Asset {
+  data : B.Data
+  size : F.Veci
+  dpi : F.Vec
+  format : B.Formats
 }
 
 struct DynamicBackend {
-  drawFont : {&DynamicBackend, &opaque, &fgFont, &opaque, &fgRect, fgColor, float, float, float, TEXT_ANTIALIASING} -> fgError
-  drawAsset : {&DynamicBackend, &opaque, &fgAsset, &fgRect, &fgRect, fgColor, float} -> fgError
-  drawRect : {&DynamicBackend, &opaque, &fgRect, &fgRect, fgColor, float, fgColor, float, &fgAsset} -> fgError
-  drawCircle : {&DynamicBackend, &opaque, &fgRect, &fgRect, fgColor, float, fgColor, float, &fgAsset} -> fgError
-  drawTriangle : {&DynamicBackend, &opaque, &fgRect, &fgRect, fgColor, float, fgColor, float, &fgAsset} -> fgError
-  drawLines : {&DynamicBackend, &opaque, &fgVec, uint, fgColor} -> fgError
-  drawCurve : {&DynamicBackend, &opaque, &fgVec, uint, fgColor, float, fgColor} -> fgError
-  --drawShader : {&DynamicBackend, &opaque} -> fgError
-  pushLayer : {&DynamicBackend, &opaque, fgRect, &float, float} -> fgError
-  popLayer : {&DynamicBackend, &opaque} -> fgError
-  pushClip : {&DynamicBackend, &opaque, fgRect} -> fgError
-  popClip : {&DynamicBackend, &opaque} -> fgError
-  dirtyRect : {&DynamicBackend, &opaque, fgRect} -> fgError
+  drawFont : {&DynamicBackend, &opaque, &B.Font, &opaque, &F.Rect, F.Color, float, float, float, B.AntiAliasing} -> F.Err
+  drawAsset : {&DynamicBackend, &opaque, &B.Asset, &F.Rect, &F.Rect, F.Color, float} -> F.Err
+  drawRect : {&DynamicBackend, &opaque, &F.Rect, &F.Rect, F.Color, float, F.Color, float, &B.Asset} -> F.Err
+  drawCircle : {&DynamicBackend, &opaque, &F.Rect, &F.Rect, F.Color, float, F.Color, float, &B.Asset} -> F.Err
+  drawTriangle : {&DynamicBackend, &opaque, &F.Rect, &F.Rect, F.Color, float, F.Color, float, &B.Asset} -> F.Err
+  drawLines : {&DynamicBackend, &opaque, &F.Vec, uint, F.Color} -> F.Err
+  drawCurve : {&DynamicBackend, &opaque, &F.Vec, uint, F.Color, float, F.Color} -> F.Err
+  --drawShader : {&DynamicBackend, &opaque} -> F.Err
+  pushLayer : {&DynamicBackend, &opaque, F.Rect, &float, float} -> F.Err
+  popLayer : {&DynamicBackend, &opaque} -> F.Err
+  pushClip : {&DynamicBackend, &opaque, F.Rect} -> F.Err
+  popClip : {&DynamicBackend, &opaque} -> F.Err
+  dirtyRect : {&DynamicBackend, &opaque, F.Rect} -> F.Err
 
-  createFont : {&DynamicBackend, rawstring, uint16, bool, uint32, fgVec} -> &fgFont
-  destroyFont : {&DynamicBackend, &fgFont} -> fgError
-  fontLayout : {&DynamicBackend, &fgFont, rawstring, &fgRect, float, float, &opaque, fgVec} -> &opaque
-  fontIndex : {&DynamicBackend, &fgFont, &opaque, &fgRect, float, float, fgVec, &fgVec, fgVec} -> uint
-  fontPos : {&DynamicBackend, &fgFont, &opaque, &fgRect, float, float, uint, fgVec} -> fgVec
+  createFont : {&DynamicBackend, rawstring, uint16, bool, uint32, F.Vec} -> &B.Font
+  destroyFont : {&DynamicBackend, &B.Font} -> F.Err
+  fontLayout : {&DynamicBackend, &B.Font, rawstring, &F.Rect, float, float, &opaque, F.Vec} -> &opaque
+  fontIndex : {&DynamicBackend, &B.Font, &opaque, &F.Rect, float, float, F.Vec, &F.Vec, F.Vec} -> uint
+  fontPos : {&DynamicBackend, &B.Font, &opaque, &F.Rect, float, float, uint, F.Vec} -> F.Vec
 
-  createAsset : {&DynamicBackend, rawstring, uint, BACKEND_FORMATS} -> &fgAsset
-  destroyAsset : {&DynamicBackend, &fgAsset} -> fgError
+  createAsset : {&DynamicBackend, rawstring, uint, B.Formats} -> &B.Asset
+  destroyAsset : {&DynamicBackend, &B.Asset} -> F.Err
 
-  putClipboard : {&DynamicBackend, CLIPBOARD_FORMATS, rawstring, uint} -> fgError
-  getClipboard : {&DynamicBackend, CLIPBOARD_FORMATS, &opaque, uint} -> uint
-  checkClipboard : {&DynamicBackend, CLIPBOARD_FORMATS} -> bool
-  clearClipboard : {&DynamicBackend, CLIPBOARD_FORMATS} -> fgError
+  putClipboard : {&DynamicBackend, B.Clipboard, rawstring, uint} -> F.Err
+  getClipboard : {&DynamicBackend, B.Clipboard, &opaque, uint} -> uint
+  checkClipboard : {&DynamicBackend, B.Clipboard} -> bool
+  clearClipboard : {&DynamicBackend, B.Clipboard} -> F.Err
 
-  processMessages : {&opaque, &DynamicBackend} -> fgError
-  setCursor : {&DynamicBackend, &opaque, FG_CURSOR} -> fgError
-  requestAnimationFrame : {&DynamicBackend, &opaque, uint64} -> fgError
+  processMessages : {&opaque, &DynamicBackend} -> F.Err
+  setCursor : {&DynamicBackend, &opaque, B.Cursor} -> F.Err
+  requestAnimationFrame : {&DynamicBackend, &opaque, uint64} -> F.Err
   destroy : {&DynamicBackend} -> {}
   
-  features : BACKEND_FEATURES
-  formats : fgFlag
-  dpi : fgVec
+  features : B.Features
+  formats : uint
+  dpi : F.Vec
   scale : float
   displays : &opaque
   n_displays : uint32
@@ -158,102 +159,102 @@ struct DynamicBackend {
 --  end
 --end
 
-terra DynamicBackend:DrawFont(data : &opaque, font : &fgFont, layout : &opaque, area : &fgRect, color : fgColor, lineHeight : float, letterSpacing : float, blur : float, aa : TEXT_ANTIALIASING) : fgError
+terra DynamicBackend:DrawFont(data : &opaque, font : &B.Font, layout : &opaque, area : &F.Rect, color : F.Color, lineHeight : float, letterSpacing : float, blur : float, aa : B.AntiAliasing) : F.Err
   return self.drawFont(self, data, font, layout, area, color, lineHeight, letterSpacing, blur, aa)
 end
-terra DynamicBackend:DrawAsset(data : &opaque, asset : &fgAsset, area : &fgRect, source : &fgRect, color : fgColor, time : float) : fgError
+terra DynamicBackend:DrawAsset(data : &opaque, asset : &B.Asset, area : &F.Rect, source : &F.Rect, color : F.Color, time : float) : F.Err
   return self.drawAsset(self, data, asset, area, source, color, time)
 end
-terra DynamicBackend:DrawRect(data : &opaque, area : &fgRect, corners : &fgRect, fillColor : fgColor, border : float, borderColor : fgColor, blur : float, asset : &fgAsset) : fgError
+terra DynamicBackend:DrawRect(data : &opaque, area : &F.Rect, corners : &F.Rect, fillColor : F.Color, border : float, borderColor : F.Color, blur : float, asset : &B.Asset) : F.Err
   return self.drawRect(self, data, area, corners, fillColor, border, borderColor, blur, asset)
 end
-terra DynamicBackend:DrawCircle(data : &opaque, area : &fgRect, arcs : &fgRect, fillColor : fgColor, border : float, borderColor : fgColor, blur : float, asset : &fgAsset) : fgError
+terra DynamicBackend:DrawCircle(data : &opaque, area : &F.Rect, arcs : &F.Rect, fillColor : F.Color, border : float, borderColor : F.Color, blur : float, asset : &B.Asset) : F.Err
   return self.drawCircle(self, data, area, arcs, fillColor, border, borderColor, blur, asset)
 end
-terra DynamicBackend:DrawTriangle(data : &opaque, area : &fgRect, corners : &fgRect, fillColor : fgColor, border : float, borderColor : fgColor, blur : float, asset : &fgAsset) : fgError
+terra DynamicBackend:DrawTriangle(data : &opaque, area : &F.Rect, corners : &F.Rect, fillColor : F.Color, border : float, borderColor : F.Color, blur : float, asset : &B.Asset) : F.Err
   return self.drawTriangle(self, data, area, corners, fillColor, border, borderColor, blur, asset)
 end
-terra DynamicBackend:DrawLines(data : &opaque, points : &fgVec, count : uint, color : fgColor) : fgError
+terra DynamicBackend:DrawLines(data : &opaque, points : &F.Vec, count : uint, color : F.Color) : F.Err
   return self.drawLines(self, data, points, count, color)
 end
-terra DynamicBackend:DrawCurve(data : &opaque, anchors : &fgVec, count : uint, fillColor : fgColor, stroke : float, strokeColor : fgColor) : fgError
+terra DynamicBackend:DrawCurve(data : &opaque, anchors : &F.Vec, count : uint, fillColor : F.Color, stroke : float, strokeColor : F.Color) : F.Err
   return self.drawCurve(self, data, anchors, count, fillColor, stroke, strokeColor)
 end
-terra DynamicBackend:PushLayer(data : &opaque, area : fgRect, transform : &float, opacity : float) : fgError
+terra DynamicBackend:PushLayer(data : &opaque, area : F.Rect, transform : &float, opacity : float) : F.Err
   return self.pushLayer(self, data, area, transform, opacity)
 end
-terra DynamicBackend:PopLayer(data : &opaque) : fgError
+terra DynamicBackend:PopLayer(data : &opaque) : F.Err
   return self.popLayer(self, data)
 end
-terra DynamicBackend:PushClip(data : &opaque, area : fgRect) : fgError
+terra DynamicBackend:PushClip(data : &opaque, area : F.Rect) : F.Err
   return self.pushClip(self, data, area)
 end
-terra DynamicBackend:PopClip(data : &opaque) : fgError
+terra DynamicBackend:PopClip(data : &opaque) : F.Err
   return self.popClip(self, data)
 end
-terra DynamicBackend:DirtyRect(data : &opaque, area : fgRect) : fgError
+terra DynamicBackend:DirtyRect(data : &opaque, area : F.Rect) : F.Err
   return self.dirtyRect(self, data, area)
 end
 
-terra DynamicBackend:CreateFont(family : rawstring, weight : uint16, italic : bool, pt : uint32, dpi : fgVec) : &fgFont
+terra DynamicBackend:CreateFont(family : rawstring, weight : uint16, italic : bool, pt : uint32, dpi : F.Vec) : &B.Font
   return self.createFont(self, family, weight, italic, pt, dpi)
 end 
-terra DynamicBackend:DestroyFont(font : &fgFont) : fgError
+terra DynamicBackend:DestroyFont(font : &B.Font) : F.Err
   return self.destroyFont(self, font)
 end
-terra DynamicBackend:FontLayout(font : &fgFont, text : rawstring, area : &fgRect, lineHeight : float, letterSpacing : float, previous : &opaque, dpi : fgVec) : &opaque
+terra DynamicBackend:FontLayout(font : &B.Font, text : rawstring, area : &F.Rect, lineHeight : float, letterSpacing : float, previous : &opaque, dpi : F.Vec) : &opaque
   return self.fontLayout(self, font, text, area, lineHeight, letterSpacing, previous, dpi)
 end
-terra DynamicBackend:FontIndex(font : &fgFont, layout : &opaque, area : &fgRect, lineHeight : float, letterSpacing : float, pos : fgVec, cursor : &fgVec, dpi : fgVec) : uint
+terra DynamicBackend:FontIndex(font : &B.Font, layout : &opaque, area : &F.Rect, lineHeight : float, letterSpacing : float, pos : F.Vec, cursor : &F.Vec, dpi : F.Vec) : uint
   return self.fontIndex(self, font, layout, area, lineHeight, letterSpacing, pos, cursor, dpi)
 end
-terra DynamicBackend:FontPos(font : &fgFont, layout : &opaque, area :&fgRect, lineHeight : float, letterSpacing : float, index : uint, dpi : fgVec) : fgVec
+terra DynamicBackend:FontPos(font : &B.Font, layout : &opaque, area :&F.Rect, lineHeight : float, letterSpacing : float, index : uint, dpi : F.Vec) : F.Vec
   return self.fontPos(self, font, layout, area, lineHeight, letterSpacing, index, dpi)
 end
 
-terra DynamicBackend:CreateAsset(data : rawstring, count : uint, format : BACKEND_FORMATS) : &fgAsset
+terra DynamicBackend:CreateAsset(data : rawstring, count : uint, format : B.Formats) : &B.Asset
   return self.createAsset(self, data, count, format)
 end
-terra DynamicBackend:DestroyAsset(asset : &fgAsset) : fgError
+terra DynamicBackend:DestroyAsset(asset : &B.Asset) : F.Err
   return self.destroyAsset(self, asset)
 end
 
-terra DynamicBackend:PutClipboard(kind : CLIPBOARD_FORMATS, data : rawstring, count : uint) : fgError
+terra DynamicBackend:PutClipboard(kind : B.Clipboard, data : rawstring, count : uint) : F.Err
   return self.putClipboard(self, kind, data, count)
 end
-terra DynamicBackend:GetClipboard(kind : CLIPBOARD_FORMATS, target : &opaque, count : uint) : uint
+terra DynamicBackend:GetClipboard(kind : B.Clipboard, target : &opaque, count : uint) : uint
   return self.getClipboard(self, kind, target, count)
 end
-terra DynamicBackend:CheckClipboard(kind : CLIPBOARD_FORMATS) : bool
+terra DynamicBackend:CheckClipboard(kind : B.Clipboard) : bool
   return self.checkClipboard(self, kind)
 end
-terra DynamicBackend:ClearClipboard(kind : CLIPBOARD_FORMATS) : fgError
+terra DynamicBackend:ClearClipboard(kind : B.Clipboard) : F.Err
   return self.clearClipboard(self, kind)
 end
 
-terra DynamicBackend:ProcessMessages(data : &opaque) : fgError
+terra DynamicBackend:ProcessMessages(data : &opaque) : F.Err
   return self.processMessages(data, self)
 end
-terra DynamicBackend:SetCursor(data : &opaque, cursor : FG_CURSOR) : fgError
+terra DynamicBackend:SetCursor(data : &opaque, cursor : B.Cursor) : F.Err
   return self.setCursor(self, data, cursor)
 end
-terra DynamicBackend:RequestAnimationFrame(data : &opaque, delay : uint64) : fgError
+terra DynamicBackend:RequestAnimationFrame(data : &opaque, delay : uint64) : F.Err
   return self.requestAnimationFrame(self, data, delay)
 end
 
 terra DynamicBackend:free(library : &opaque) : {}
   self.destroy(self)
   if library ~= nil then 
-    FreeLibrary(library)
+    OS.FreeLibrary(library)
   end
 end
 
-fgInitBackend = {&opaque} -> &DynamicBackend
+B.InitBackend = {&opaque} -> &DynamicBackend
 
 -- In cases where the backend is not known at compile time, we must load it via a shared library at runtime 
 function DynamicBackend:new(root, path, name)
   return quote
-    var l : &opaque = LoadLibrary(path)
+    var l : &opaque = OS.LoadLibrary(path)
 
     if l == nil then
       return nil, nil
@@ -277,7 +278,7 @@ function DynamicBackend:new(root, path, name)
       end
     end
 
-    var f : fgInitBackend = [fgInitBackend](LoadFunction(l, name))
+    var f : B.InitBackend = [B.InitBackend](OS.LoadFunction(l, name))
 
     if str ~= nil then
       C.free(str)
@@ -290,7 +291,9 @@ function DynamicBackend:new(root, path, name)
       end
     end
 
-    FreeLibrary(l)
+    OS.FreeLibrary(l)
     return nil, nil
   end
 end
+
+return B

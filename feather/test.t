@@ -4,21 +4,19 @@ local C = terralib.includecstring [[
 ]]
 
 local Array = require 'feather.array'
-require 'feather.backend'
-local Color = require 'feather.color'
+local F = require 'feather.shared'
+local Backend = require 'feather.backend'
 local Enum = require 'feather.enum'
 local Flags = require 'feather.flags'
 local Message = require 'feather.message'
-require 'feather.os'
-require 'feather.rect'
-require 'feather.vec'
+local OS = require 'feather.os'
 
-struct TestHarness {
+local struct TestHarness {
   passed : int;
   total : int;
 }
 
-terra Test(self : &TestHarness, exp : bool)
+local terra Test(self : &TestHarness, exp : bool)
     self.total = self.total + 1
     if exp then
       self.passed = self.passed + 1
@@ -78,7 +76,7 @@ terra TestHarness:backend()
 end
 
 terra TestHarness:color()
-  var c : fgColor = fgColor{ 0 }
+  var c : F.Color = F.Color{ 0 }
   Test(self, c.r == 0)
   Test(self, c.g == 0)
   Test(self, c.b == 0)
@@ -111,7 +109,7 @@ terra TestHarness:color()
   Test(self, c.a == 0x12)
   Test(self, c.v == 0x12345678)
   
-  var c2 = fgColor { 0x12345678 }
+  var c2 = F.Color { 0x12345678 }
   Test(self, c2.r == 0x34)
   Test(self, c2.g == 0x56)
   Test(self, c2.b == 0x78)
@@ -165,7 +163,7 @@ terra TestHarness:rect()
 end
 
 terra TestHarness:vec()
-  var a = fgVeci{array(1,2)}
+  var a = F.Veci{array(1,2)}
   Test(self, a.x == 1)
   Test(self, a.y == 2)
   Test(self, a.v[0] == 1)
@@ -175,7 +173,7 @@ terra TestHarness:vec()
   Test(self, a.x == 5)
   Test(self, a.y == 6)
 
-  var b = fgVeci{array(-3,-4)}
+  var b = F.Veci{array(-3,-4)}
   var c = a + b
   Test(self, c.x == 2)
   Test(self, c.y == 2)
@@ -197,12 +195,14 @@ end
 
 local SUBTESTLEN = 11
 
-terra PrintColumns(a : rawstring, b : rawstring, c : rawstring) : {}
+local terra PrintColumns(a : rawstring, b : rawstring, c : rawstring) : {}
   C.printf("%-*s %-*s %-*s\n", 24, a, [SUBTESTLEN], b, 8, c);
 end
 
-terra main(argc : int, argv : &rawstring) : int
-  C.printf("Feather v%i.%i.%i Test Utility\n\n", [fgVersion[1]], [fgVersion[2]], [fgVersion[3]])
+local T = {}
+
+terra T.main(argc : int, argv : &rawstring) : int
+  C.printf("Feather v%i.%i.%i Test Utility\n\n", [F.Version[1]], [F.Version[2]], [F.Version[3]])
 
   var harness = TestHarness{ }
   
@@ -224,4 +224,4 @@ terra main(argc : int, argv : &rawstring) : int
   return 0;
 end
 
-
+return T

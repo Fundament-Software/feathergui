@@ -1,5 +1,8 @@
 local ffi = require("ffi")
 
+local C
+local S = {}
+
 if ffi.os == "Windows" then
   C = terralib.includecstring [[
 #include <intrin.h>
@@ -27,17 +30,17 @@ size_t fgUTF8toUTF16(const char* restrict input, ptrdiff_t srclen, wchar_t* rest
 }
   ]]
   
-  terra LoadLibrary(path : rawstring) : &opaque
-      var len = C.fgUTF8toUTF16(path, -1, nil, 0);
-      var wpath = [&uint16](C.malloc(sizeof(uint16) * len))
-      C.fgUTF8toUTF16(path, -1, wpath, len);
+  terra S.LoadLibrary(path : rawstring) : &opaque
+    var len = C.fgUTF8toUTF16(path, -1, nil, 0);
+    var wpath = [&uint16](C.malloc(sizeof(uint16) * len))
+    C.fgUTF8toUTF16(path, -1, wpath, len);
 
-      var l : &opaque = C.LoadLibraryW(wpath)
-      C.free(wpath)
-      return l
+    var l : &opaque = C.LoadLibraryW(wpath)
+    C.free(wpath)
+    return l
   end
 
-  terra LoadFunction(ptr : &opaque, name : rawstring) : &opaque
+  terra S.LoadFunction(ptr : &opaque, name : rawstring) : &opaque
     return C.GetProcAddress([C.HMODULE](ptr), name)
   end
 
@@ -49,15 +52,17 @@ else
   void FreeDLL(void* dll) { dlclose(dll); }
   ]]
 
-  terra LoadLibrary(path : rawstring) : &opaque
-      return C.dlopen(path, RTLD_NOW)
+  terra S.LoadLibrary(path : rawstring) : &opaque
+    return C.dlopen(path, RTLD_NOW)
   end
 
-  terra LoadFunction(ptr : &opaque, name : rawstring) : &opaque
+  terra S.LoadFunction(ptr : &opaque, name : rawstring) : &opaque
     return C.dlsym(ptr, name)
   end
 end
 
-terra FreeLibrary(ptr : &opaque) : {}
+terra S.FreeLibrary(ptr : &opaque) : {}
   C.FreeDLL(ptr)
 end
+
+return S

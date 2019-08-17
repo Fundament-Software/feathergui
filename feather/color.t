@@ -43,7 +43,4 @@ local Color = terralib.memoize(function(abits, rbits, gbits, bbits)
   return s
 end)
 
-fgColor = Color(8,8,8,8)
-fgColor64 = Color(16,16,16,16)
-
 return Color

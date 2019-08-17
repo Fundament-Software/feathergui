@@ -71,13 +71,4 @@ local Vec = terralib.memoize(function(t, n)
   return s
 end)
 
-fgVec = Vec(float, 2)
-fgVec3D = Vec(float, 3)
-fgVeci = Vec(int, 2)
-
-struct UVec {
-  abs : fgVec
-  rel : fgVec
-}
-
 return Vec
