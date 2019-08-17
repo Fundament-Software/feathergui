@@ -1,6 +1,8 @@
 local tunpack = unpack or table.unpack
 
-local function astype(typ)
+local M = {}
+
+function M.astype(typ)
   if terralib.types.istype(typ) then
     return typ
   elseif terralib.isquote(typ) then
@@ -10,7 +12,7 @@ local function astype(typ)
   end
 end
 
-local function type_template(typefn)
+function M.type_template(typefn)
   typefn = terralib.memoize(typefn)
   local function fn(...)
     local args = {...}
@@ -22,4 +24,4 @@ local function type_template(typefn)
   return macro(fn, fn)
 end
 
-return { type_template = type_template }
+return M
