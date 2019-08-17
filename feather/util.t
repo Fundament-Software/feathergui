@@ -17,7 +17,7 @@ function M.type_template(typefn)
   local function fn(...)
     local args = {...}
     for i = 1, select("#", ...) do
-      args[i] = astype(args[i])
+      args[i] = M.astype(args[i])
     end
     return typefn(tunpack(args))
   end
