@@ -25,14 +25,14 @@ local function Flags(lst)
         error "Flags can only be true or false."
       end
       if map[entryname] then
-        return quote flag_expr.val = flag_expr.val or terralib.select(value_expr, [2^map[entryname]], 0) end
+        return quote flag_expr.val = (flag_expr.val and not [2^map[entryname]]) or terralib.select(value_expr, [2^map[entryname]], 0) end
       else
         error "No flag of that name is defined."
       end
   end)
 
   for i, v in ipairs(lst) do
-    flagset.methods[v] = constant(`[flagset]{[2^i]})
+    flagset.methods[v] = constant(`[flagset]{[2^(i - 1)]})
   end
 
   return flagset

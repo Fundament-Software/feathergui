@@ -147,11 +147,18 @@ local TestFlags = Flags{
 }
 
 terra TestHarness:flags()
+  Test(self, TestFlags.First.val == 1)
+  Test(self, TestFlags.second.val == 2)
+  Test(self, TestFlags.THIRD.val == 4)
   var f = TestFlags.First + TestFlags.THIRD
   Test(self, not (f.First and f.second))
+  Test(self, f.First)
+  Test(self, not f.second)
+  Test(self, f.THIRD)
   f.THIRD = false
   f.second = true
   Test(self, f.First and f.second)
+  Test(self, f.First and f.second and not f.THIRD)
 end
 
 terra TestHarness:message()
