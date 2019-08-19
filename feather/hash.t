@@ -1,5 +1,6 @@
 C = terralib.includecstring [[
 	#include <stdlib.h>
+  #include <string.h>
 ]]
 
 local function SafeFree(...)
@@ -18,7 +19,38 @@ end
 
 local Util = require 'feather.util'
 
-local Hash = Util.type_template(function(Key, Value, Hasher, Equality)
+local H = {}
+
+H.IntHash = macro(function(key) return `[uint32](key) end)
+H.IntEqual = macro(function(a, b) return `a == b end)
+
+H.Int64Hash = macro(function(key) return `[uint32](((key>>33)^key^key)<<11) end)
+H.Int64Equal = macro(function(a, b) return `a == b end)
+
+terra H.StringHash(s : rawstring) : uint32
+	uint32 h = [uint32](s[0]);
+	if h ~= 0 then
+    var i = 1
+    while s[i] ~= 0 do
+       h = (h << 5) - h + [uint32](s[i]);
+       i = i + 1
+    end
+  end
+
+	return h
+end
+terra H.StringEqual(a : rawstring, b: rawstring) : bool return C.strcmp(a, b) end
+
+terra H.StringInsHash(s : rawstring) : uint32
+  khint_t h = ((*s)>64 && (*s)<91) ? (*s) + 32 : *s;
+  if(h)
+    for(++s; *s; ++s)
+      h = (h << 5) - h + (((*s)>64 && (*s)<91) ? (*s) + 32 : *s);
+  return h;
+end
+terra H.StringInsEqual(a : rawstring, b: rawstring) : bool return C.stricmp(a, b) end
+
+H.Hash = Util.type_template(function(Key, Value, Hasher, Equality)
   local is_map = Value ~= nil
 
 	local struct s {
@@ -42,22 +74,15 @@ local Hash = Util.type_template(function(Key, Value, Hasher, Equality)
     return `[&s](C.calloc(1, sizeof(s)))
   end
 
-  function set_isdel_true(self : &uint8, uint32 x)
 
-  end
+  local function isempty = macro(function(flag, i) return `(flag[i] and 2) end)
+  local function isdel = macro(function(flag, i) return `(flag[i] and 1) end)
+  local function iseither = macro(function(flag, i) return `(flag[i] and 3) end)
+  local function set_isdel_false = macro(function(flag, i) return `(flag[i]=(flag[i] and (not 1))) end)
+  local function set_isempty_false = macro(function(flag, i) return `(flag[i]=(flag[i] and (not 2))) end)
+  local function set_isboth_false = macro(function(flag, i) return `(flag[i] = 0) end)
+  local function set_isdel_true = macro(function(flag, i) return `(flag[i] = (flag[i] or 1)) end)
 
-  function iseither(self : &uint8, uint32 x)
-
-  end
-
-  function isempty(self : &uint8, uint32 x)
-
-  end
-
-  function isdel(self : &uint8, uint32 x)
-
-  end
-  
   terra s:destroy() : {}
     SafeFree(self.keys, self.flags, self)
     escape if is_map then emit(`SafeFree(self.vals)) end end

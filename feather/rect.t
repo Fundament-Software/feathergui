@@ -26,51 +26,48 @@ local Rect = terralib.memoize(function(T)
     s.metamethods[op] = terralib.overloadedfunction("array_op", { SS_op, ST_op, TS_op })
   end
 
-  local terra array_eq(a : T[4], b : T[4])
+  terra s.metamethods.__eq(a : s, b : s)
     for i = 0,4 do
-      if a[i] ~= b[i] then return false end
+      if a.data[i] ~= b.data[i] then return false end
     end
     return true
   end
-    
-  local terra SS_eq(a : s, b : s) return array_eq(a.data, b.data) end
-  local terra ST_eq(a : s, b : T) return array_eq(a.data, array(b, b, b, b)) end
-  local terra TS_eq(a : T, b : s) return array_eq(array(a, a, a, a), b.data) end
-  local terra SS_ne(a : s, b : s) return not array_eq(a.data, b.data) end
-  local terra ST_ne(a : s, b : T) return not array_eq(a.data, array(b, b, b, b)) end
-  local terra TS_ne(a : T, b : s) return not array_eq(array(a, a, a, a), b.data) end
   
-  s.metamethods.__eq = terralib.overloadedfunction("array_eq", { SS_eq, ST_eq, TS_eq })
-  s.metamethods.__ne = terralib.overloadedfunction("array_ne", { SS_ne, ST_ne, TS_ne })
+  terra s.metamethods.__ne(a : s, b : s) : bool
+    return not [s.metamethods.__eq](a, b)
+  end
   
   local lookups = {left = 0, top = 1, right = 2, bottom = 3, l = 0, t = 1, r = 2, b = 3 }
   s.metamethods.__entrymissing = macro(function(entryname, expr)
     if entryname == "topleft" then 
-      return Vec(T, 4)
+      return `[Vec(T, 2)]{array(expr.data[0], expr.data[1])}
+    end
+    if entryname == "bottomright" then 
+      return `[Vec(T, 2)]{array(expr.data[2], expr.data[3])}
     end
     if lookups[entryname] then
-      if lookups[entryname] < n then
-        return `expr.v[ [ lookups[entryname] ] ]
+      if lookups[entryname] < 4 then
+        return `expr.data[ [ lookups[entryname] ] ]
       else
-        error "Tried to look up letter that doesn't exist in an n-dimensional vector."
+        error ("Index "..lookups[entryname].." doesn't exist in a rect.")
       end
     else
-      error "That is not a valid field."
+      error (entryname.." is not a valid field.")
     end
   end)
   
   s.metamethods.__setentry = macro(function(entryname, expr, value)
     if value:gettype() ~= t then
-      error "tried to set vector element to something other than the vector type"
+      error "tried to set rect element to something other than the rect type"
     end
     if lookups[entryname] then
-      if lookups[entryname] < n then
-        return quote expr.v[ [ lookups[entryname] ] ] = value end
+      if lookups[entryname] < 4 then
+        return quote expr.data[ [ lookups[entryname] ] ] = value end
       else
-        error "Tried to look up letter that doesn't exist in an n-dimensional vector."
+        error ("Index "..lookups[entryname].." doesn't exist in a rect.")
       end
     else
-      error "That is not a valid field."
+      error (entryname.." is not a valid field.")
     end
   end)
 

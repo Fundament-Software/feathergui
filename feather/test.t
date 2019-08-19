@@ -166,7 +166,70 @@ terra TestHarness:message()
 end
 
 terra TestHarness:rect()
+  var a = F.Rect{array(1f,2f,3f,4f)}
+  Test(self, a.l == 1)
+  Test(self, a.t == 2)
+  Test(self, a.r == 3)
+  Test(self, a.b == 4)
+  Test(self, a.left == 1)
+  Test(self, a.top == 2)
+  Test(self, a.right == 3)
+  Test(self, a.bottom == 4)
+  Test(self, a.data[0] == 1)
+  Test(self, a.data[1] == 2)
+  Test(self, a.data[2] == 3)
+  Test(self, a.data[3] == 4)
 
+  var b = F.Rect{array(5f,6f,7f,8f)}
+  var c = a + b
+  Test(self, c.l == 6f)
+  Test(self, c.t == 8f)
+  Test(self, c.r == 10f)
+  Test(self, c.b == 12f)
+  c = b - a
+  Test(self, c.l == 4f)
+  Test(self, c.t == 4f)
+  Test(self, c.r == 4f)
+  Test(self, c.b == 4f)
+  c = a - b
+  Test(self, c.l == -4f)
+  Test(self, c.t == -4f)
+  Test(self, c.r == -4f)
+  Test(self, c.b == -4f)
+  c = b * a
+  Test(self, c.l == 5f)
+  Test(self, c.t == 12f)
+  Test(self, c.r == 21f)
+  Test(self, c.b == 32f)
+  c = b / a
+  Test(self, c.l == 5f)
+  Test(self, c.t == 3f)
+  Test(self, c.r == (7f/3f))
+  Test(self, c.b == 2f)
+
+  c = a + 1f
+  Test(self, c.l == 2f)
+  Test(self, c.t == 3f)
+  Test(self, c.r == 4f)
+  Test(self, c.b == 5f)
+  c = 1f + a
+  Test(self, c.l == 2f)
+  Test(self, c.t == 3f)
+  Test(self, c.r == 4f)
+  Test(self, c.b == 5f)
+  c = 2f * a
+  Test(self, c.l == 2f)
+  Test(self, c.t == 4f)
+  Test(self, c.r == 6f)
+  Test(self, c.b == 8f)
+
+  var d = a.topleft + b.bottomright
+  Test(self, d.x == 8)
+  Test(self, d.y == 10)
+
+  Test(self, a ~= b)
+  Test(self, a == a)
+  Test(self, not (a == b))
 end
 
 terra TestHarness:vec()
@@ -188,11 +251,21 @@ terra TestHarness:vec()
   Test(self, c.x == 8)
   Test(self, c.y == 10)
   c = a * b
-  Test(self, c.x == -3)
-  Test(self, c.y == -8)
+  Test(self, c.x == -15)
+  Test(self, c.y == -24)
+  a.x = 1
+  a.y = 2
   c = b / a
   Test(self, c.x == -3)
   Test(self, c.y == -2)
+
+  c = a + 3
+  Test(self, c.x == 4)
+  Test(self, c.y == 5)
+
+  c = 4 - b
+  Test(self, c.x == 7)
+  Test(self, c.y == 8)
 
   Test(self, a ~= b)
   b.x = a.x

@@ -25,7 +25,7 @@ local Color = terralib.memoize(function(abits, rbits, gbits, bbits)
     if lookuplow[entryname] then
         return `(expr.v and [ GetBitMask(lookuplow[entryname], lookuphigh[entryname]) ]) >> [ lookuplow[entryname] ]
     else
-      error "That is not a valid color component."
+      error (entryname.." is not a valid color component.")
     end
   end)
    
@@ -36,7 +36,7 @@ local Color = terralib.memoize(function(abits, rbits, gbits, bbits)
     if lookuplow[entryname] then
       return quote expr.v = (expr.v and not [ GetBitMask(lookuplow[entryname], lookuphigh[entryname]) ]) or ((value << [ lookuplow[entryname] ]) and [ GetBitMask(lookuplow[entryname], lookuphigh[entryname]) ] ) end
     else
-      error "That is not a valid color component."
+      error (entryname.." is not a valid color component.")
     end
   end)
 

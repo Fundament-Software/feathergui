@@ -8,7 +8,7 @@ function M.astype(typ)
   elseif terralib.isquote(typ) then
     return typ:astype()
   else
-    error "tried to convert something to a type that "
+    error "tried to convert something to a type that isn't a quote or a type"
   end
 end
 

@@ -16,7 +16,7 @@ local function Flags(lst)
       if map[entryname] then
         return `(flag_expr.val and [2^map[entryname]]) ~= 0
       else
-        error "No flag of that name is defined."
+        error (entryname.." is not a flag in this set")
       end
   end)
 
@@ -27,7 +27,7 @@ local function Flags(lst)
       if map[entryname] then
         return quote flag_expr.val = (flag_expr.val and not [2^map[entryname]]) or terralib.select(value_expr, [2^map[entryname]], 0) end
       else
-        error "No flag of that name is defined."
+        error (entryname.." is not a flag in this set")
       end
   end)
 
