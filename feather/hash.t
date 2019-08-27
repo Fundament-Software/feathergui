@@ -3,20 +3,6 @@ C = terralib.includecstring [[
   #include <string.h>
 ]]
 
-local function SafeFree(...)
-  return quote
-    escape
-      for _, p in [ipairs({...})] do
-        emit(quote 
-          if p ~= nil then
-            C.free(p)
-          end
-        end)
-      end
-    end
-  end
-end
-
 local Util = require 'feather.util'
 
 local H = {}
@@ -28,7 +14,7 @@ H.Int64Hash = macro(function(key) return `[uint32](((key>>33)^key^key)<<11) end)
 H.Int64Equal = macro(function(a, b) return `a == b end)
 
 terra H.StringHash(s : rawstring) : uint32
-	uint32 h = [uint32](s[0]);
+	var h : uint32 = [uint32](s[0]);
 	if h ~= 0 then
     var i = 1
     while s[i] ~= 0 do
@@ -39,16 +25,17 @@ terra H.StringHash(s : rawstring) : uint32
 
 	return h
 end
-terra H.StringEqual(a : rawstring, b: rawstring) : bool return C.strcmp(a, b) end
 
-terra H.StringInsHash(s : rawstring) : uint32
+terra H.StringEqual(a : rawstring, b: rawstring) : bool return C.strcmp(a, b) == 0 end
+
+--[[terra H.StringInsHash(s : rawstring) : uint32
   khint_t h = ((*s)>64 && (*s)<91) ? (*s) + 32 : *s;
   if(h)
     for(++s; *s; ++s)
       h = (h << 5) - h + (((*s)>64 && (*s)<91) ? (*s) + 32 : *s);
   return h;
 end
-terra H.StringInsEqual(a : rawstring, b: rawstring) : bool return C.stricmp(a, b) end
+terra H.StringInsEqual(a : rawstring, b: rawstring) : bool return C.stricmp(a, b) == 0 end--]]
 
 H.Hash = Util.type_template(function(Key, Value, Hasher, Equality)
   local is_map = Value ~= nil
@@ -67,25 +54,26 @@ H.Hash = Util.type_template(function(Key, Value, Hasher, Equality)
   end
 
 	function s.metamethods.__typename(self)
-	  return "Hash("..tostring(Key)..","..tostring(Value)..")"
+    if is_map then 
+	    return "HashMap("..tostring(Key)..","..tostring(Value)..")"
+    else
+	    return "HashSet("..tostring(Key)..")"
+    end
 	end
 
-  function s:new()
-    return `[&s](C.calloc(1, sizeof(s)))
-  end
+  s.methods.new = macro(function() return `[&s](C.calloc(1, sizeof(s))) end)
 
-
-  local function isempty = macro(function(flag, i) return `(flag[i] and 2) end)
-  local function isdel = macro(function(flag, i) return `(flag[i] and 1) end)
-  local function iseither = macro(function(flag, i) return `(flag[i] and 3) end)
-  local function set_isdel_false = macro(function(flag, i) return `(flag[i]=(flag[i] and (not 1))) end)
-  local function set_isempty_false = macro(function(flag, i) return `(flag[i]=(flag[i] and (not 2))) end)
-  local function set_isboth_false = macro(function(flag, i) return `(flag[i] = 0) end)
-  local function set_isdel_true = macro(function(flag, i) return `(flag[i] = (flag[i] or 1)) end)
+  local isempty = macro(function(flag, i) return `(flag[i] and 2) end)
+  local isdel = macro(function(flag, i) return `(flag[i] and 1) end)
+  local iseither = macro(function(flag, i) return `(flag[i] and 3) end)
+  local set_isdel_false = macro(function(flag, i) return quote flag[i]=(flag[i] and (not 1)) end end)
+  local set_isempty_false = macro(function(flag, i) return quote flag[i]=(flag[i] and (not 2)) end end)
+  local set_isboth_false = macro(function(flag, i) return quote flag[i] = 0 end end)
+  local set_isdel_true = macro(function(flag, i) return quote flag[i] = (flag[i] or 1) end end)
 
   terra s:destroy() : {}
-    SafeFree(self.keys, self.flags, self)
-    escape if is_map then emit(`SafeFree(self.vals)) end end
+    Util.SafeFree(self.keys, self.flags, self)
+    escape if is_map then emit(`Util.SafeFree(self.vals)) end end
   end
 
   terra s:clear() : {}
@@ -124,12 +112,12 @@ H.Hash = Util.type_template(function(Key, Value, Hasher, Equality)
 			if self.size >= [uint32](new_n_buckets * HASH_UPPER + 0.5) then
         j = 0
 			else
-				new_flags = [uint8&](C.malloc(new_n_buckets))
+				new_flags = [&uint8](C.malloc(new_n_buckets))
 				if new_flags == nil then return -1 end
 
 				C.memset(new_flags, 2, new_n_buckets)
 				if self.n_buckets < new_n_buckets then	
-					Key *new_keys = [&Key](C.realloc(self.keys, new_n_buckets * sizeof(Key)))
+					var new_keys : &Key = [&Key](C.realloc(self.keys, new_n_buckets * sizeof(Key)))
 					if (new_keys == nil) then 
             kfree(new_flags) 
             return -1
@@ -168,13 +156,13 @@ H.Hash = Util.type_template(function(Key, Value, Hasher, Equality)
 
 					set_isdel_true(self.flags, j)
 					while true do 
-						uint32 k, i, step = 0
-						k = __hash_func(key)
-						i = k and new_mask
+						var step : uint32 = 0
+						var k : uint32 = __hash_func(key)
+						var i : uint32 = k and new_mask
 						
             while (not isempty(new_flags, i)) do
               step = step + 1
-              i = (i + step) & new_mask
+              i = (i + step) and new_mask
             end
 
 						set_isempty_false(new_flags, i)
@@ -198,7 +186,7 @@ H.Hash = Util.type_template(function(Key, Value, Hasher, Equality)
 							set_isdel_true(self.flags, i)
 						else
 							self.keys[i] = key
-							escape if is_map then emit(`self.vals[i] = val) end end
+							escape if is_map then emit(quote self.vals[i] = val end) end end
 							break
 						end
 					end
@@ -206,7 +194,7 @@ H.Hash = Util.type_template(function(Key, Value, Hasher, Equality)
 			end
 			if self.n_buckets > new_n_buckets then
 				self.keys = [&Key](C.realloc(self.keys, new_n_buckets * sizeof(Key)))
-				escape if is_map then emit(`self.vals = [&Value](krealloc(self.vals, new_n_buckets * sizeof(Value)))) end end
+				escape if is_map then emit(quote self.vals = [&Value](krealloc(self.vals, new_n_buckets * sizeof(Value))) end) end end
 			end
 			C.free(self.flags) 
 			self.flags = new_flags
@@ -218,7 +206,7 @@ H.Hash = Util.type_template(function(Key, Value, Hasher, Equality)
   end
 
   terra s:put(key : Key) : { uint32, int }
-		uint32 x
+		var x : uint32
 		if self.n_occupied >= self.upper_bound then
 			if self.n_buckets > (self.size<<1) then
 				if self:resize(self.n_buckets - 1) < 0 then
@@ -230,8 +218,14 @@ H.Hash = Util.type_template(function(Key, Value, Hasher, Equality)
 		end
 
 		do
-			uint32 k, i, site, last, mask = self.n_buckets - 1, step = 0
-			x = site = self.n_buckets; k = Hasher(key); i = k & mask
+      var last : uint32
+      var mask : uint32 = self.n_buckets - 1
+      var step : uint32 = 0
+			var site : uint32 = self.n_buckets
+
+      x = site
+      var k : uint32 = Hasher(key)
+      var i : uint32 = k and mask
 			if isempty(self.flags, i) then
         x = i
 			else
@@ -273,7 +267,7 @@ H.Hash = Util.type_template(function(Key, Value, Hasher, Equality)
   end
 
   terra s:del(x : uint32)
-		if x ~= self.n_buckets and not iseither(self.flags, x)
+		if x ~= self.n_buckets and not iseither(self.flags, x) then
 			set_isdel_true(self.flags, x)
 			self.size = self.size - 1
 		end
@@ -326,4 +320,4 @@ H.Hash = Util.type_template(function(Key, Value, Hasher, Equality)
 	return s
 end)
 
-return Hash
+return H
