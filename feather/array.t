@@ -1,7 +1,4 @@
-C = terralib.includecstring [[
-	#include <stdlib.h>
-  #include <string.h>
-]]
+C = require 'libc'
 
 local Util = require 'feather.util'
 
@@ -44,6 +41,12 @@ local Array = Util.type_template(function(T)
     self.size = self.size + 1
 	end
 
+  s.methods.push = s.methods.add
+  terra s:pop()
+    self.size = self.size - 1
+    return self.data[self.size]
+  end
+
 	terra s:insert(obj : T, index : uint) : bool
     if index >= self.size then
       return self:add(obj)
@@ -72,6 +75,15 @@ local Array = Util.type_template(function(T)
 	s.metamethods.__apply = macro(function(self,idx)
 		return `self.data[idx]
 	end)
+
+  s.metamethods.__for = function(iter, body)
+    return quote
+      var it = iter
+      for i = 0, it.size do
+        body(it(i))
+      end
+    end
+  end
 
 	return s
 end)
