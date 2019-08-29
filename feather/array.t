@@ -1,6 +1,7 @@
 C = require 'libc'
 
 local Util = require 'feather.util'
+local Alloc = require 'stdlib.alloc'
 
 local Array = Util.type_template(function(T)
 	local struct s {
@@ -13,11 +14,11 @@ local Array = Util.type_template(function(T)
 	    return "Array("..tostring(T)..")"
 	end
 
-  s.methods.new = macro(function() return `[&s](C.calloc(1, sizeof(s))) end)
+  s.methods.new = macro(function() return `Alloc.calloc(s, 1) end)
 
 	terra s:reserve(n : uint) : bool
     if n > self.capacity then
-      var ptr = C.realloc(self.data, n*sizeof(T))
+      var ptr = Alloc.realloc(self.data, n)
       if ptr == nil then
         return false
       end
@@ -67,9 +68,9 @@ local Array = Util.type_template(function(T)
 
 	terra s:free() : {}
     if self.data ~= nil then
-		  C.free(self.data)
+		  Alloc.free(self.data)
     end
-    C.free(self)
+    Alloc.free(self)
 	end
 
 	s.metamethods.__apply = macro(function(self,idx)

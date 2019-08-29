@@ -24,4 +24,21 @@ function M.type_template(typefn)
   return macro(fn, fn)
 end
 
+function M.SafeFree(...)
+  return quote
+    escape
+      for _, p in ipairs({...}) do
+        if not p:gettype():ispointer() then
+          error ("p is not a pointer: " .. p:gettype():layoutstring())
+        end
+        emit(quote 
+          if p ~= nil then
+            C.free(p)
+          end
+        end)
+      end
+    end
+  end
+end
+
 return M
