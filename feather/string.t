@@ -72,7 +72,7 @@ local function tostringseg(expr)
     if conversion ~= nil then
         return `conversion(expr)
     end
-    error "no suitable string segment conversion was available for type "..tostring(expr:gettype())
+    error ("no suitable string segment conversion was available for type "..tostring(expr:gettype()))
 end
 
 builder.methods.append = macro(function(self, ...)

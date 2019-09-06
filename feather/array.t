@@ -1,4 +1,4 @@
-C = require 'libc'
+C = require 'feather.libc'
 
 local Util = require 'feather.util'
 local Alloc = require 'stdlib.alloc'
@@ -18,7 +18,7 @@ local Array = Util.type_template(function(T)
 
 	terra s:reserve(n : uint) : bool
     if n > self.capacity then
-      var ptr = Alloc.realloc(self.data, n)
+      var ptr = Alloc.realloc(self.data, self.capacity, n)
       if ptr == nil then
         return false
       end

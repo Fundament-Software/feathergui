@@ -108,6 +108,15 @@ struct B.Asset {
   format : B.Formats
 }
 
+struct B.Display {
+  size : F.Veci
+  dpi : F.Vec
+  handle : uint64
+  primary : bool
+}
+
+struct Element {}
+
 struct DynamicBackend {
   drawFont : {&DynamicBackend, &opaque, &B.Font, &opaque, &F.Rect, F.Color, float, float, float, B.AntiAliasing} -> F.Err
   drawAsset : {&DynamicBackend, &opaque, &B.Asset, &F.Rect, &F.Rect, F.Color, float} -> F.Err
@@ -141,13 +150,15 @@ struct DynamicBackend {
   setCursor : {&DynamicBackend, &opaque, B.Cursor} -> F.Err
   requestAnimationFrame : {&DynamicBackend, &opaque, uint64} -> F.Err
   destroy : {&DynamicBackend} -> {}
-  
+  getMonitorIndex : {&DynamicBackend, uint, &B.Display} -> {F.Err}
+  getMonitor : {&DynamicBackend, uint64, &B.Display} -> {F.Err}
+  spawnWindow : {&Element, &F.Rect, rawstring} -> {&opaque}
+  despawnWindow : {&opaque} -> F.Err
+
   features : B.Features
   formats : uint
   dpi : F.Vec
   scale : float
-  displays : &opaque
-  n_displays : uint32
   cursorblink : uint64
   tooltipdelay : uint64
 }

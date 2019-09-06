@@ -36,33 +36,31 @@ function M.wrap_func_as_macro_method(func)
   end)
 end
 
--- This defines a type-safe allocator interface that can be overriden directly or generated from a raw allocator
-M.Allocator = CT.All(
-  CT.Method("alloc", CT.MetaConstraint(function(a) return CT.FunctionConstraint({a, CT.Integral} -> CT.Pointer(a)) end, CT.TerraType)),
-  CT.Method("free", CT.FunctionConstraint({CT.Pointer(CT.TerraType)} -> {})),
-  CT.Method("clear", CT.FunctionConstraint({CT.Pointer(CT.TerraType), CT.Integral, CT.Integral} -> {})),
-  CT.Method("calloc", CT.MetaConstraint(function(a) return CT.FunctionConstraint({a, CT.Integral} -> CT.Pointer(a)) end, Ct.TerraType)),
-  CT.Method("realloc", CT.MetaConstraint(function(a) return CT.FunctionConstraint({CT.Pointer(a), CT.Integral} -> CT.Pointer(a)) end, Ct.TerraType)),
-  CT.Method("copy", CT.MetaConstraint(function(a) return CT.FunctionConstraint({CT.Pointer(a),CT.Pointer(a),CT.Integral} -> {}) end, Ct.TerraType))
-)
-
 -- This defines a raw allocation interface used to generate a type safe allocator interface
 M.RawAllocator = CT.All(
-  CT.Method("alloc", CT.FunctionConstraint({intptr} -> {&opaque})),
-  CT.Method("free", CT.FunctionConstraint({&opaque} -> {})),
-  M.Any + CT.Method("clear", CT.FunctionConstraint({&opaque, intptr, intptr} -> {})),
-  M.Any + CT.Method("calloc", CT.FunctionConstraint({intptr} -> {&opaque})),
-  M.Any + CT.Method("realloc", CT.FunctionConstraint({&opaque, intptr, intptr} -> {&opaque})), -- First int is old size, second int is new size. Some realloc implementations may throw away the old size parameter.
-  M.Any + CT.Method("copy", CT.FunctionConstraint({&opaque, &opaque, intptr} -> {}))
+  CT.Method("alloc", {intptr}, &opaque),
+  CT.Method("free", {&opaque}, nil),
+  CT.Any + CT.Method("clear", {&opaque, intptr, intptr}, nil),
+  CT.Any + CT.Method("calloc", {intptr}, &opaque),
+  CT.Any + CT.Method("realloc", {&opaque, intptr, intptr}, &opaque), -- First int is old size, second int is new size. Some realloc implementations may throw away the old size parameter.
+  CT.Any + CT.Method("copy", {&opaque, &opaque, intptr}, nil)
 )
 
+-- This defines a type-safe allocator interface that can be overriden directly or generated from a raw allocator
+M.Allocator = CT.All(
+  CT.MetaConstraint(function(a) return CT.Method("alloc", {CT.TypeConstraint(a), CT.Integral}, CT.Pointer(a)) end, CT.TerraType),
+  CT.Method("free", {CT.Pointer(CT.TerraType)}, nil),
+  CT.Method("clear", {CT.Pointer(CT.TerraType), CT.Integral, CT.Integral}, nil),
+  CT.MetaConstraint(function(a) return CT.Method("calloc", {CT.TypeConstraint(a), CT.Integral}, CT.Pointer(a)) end, CT.TerraType),
+  CT.MetaConstraint(function(a) return CT.Method("realloc", {CT.Pointer(a), CT.Integral, CT.Integral}, CT.Pointer(a)) end, CT.TerraType),
+  CT.MetaConstraint(function(a) return CT.Method("copy", {CT.Pointer(a),CT.Pointer(a),CT.Integral}, nil) end, CT.TerraType)
+)
 
--- libC allocator is the default allocator. It uses libc functions to perfrom memory manipulations.
-
+-- libC allocator is the default allocator. It uses libc functions to perform memory manipulations.
 local malloc = terralib.externfunction("malloc", {intptr} -> {&opaque})
 local free = terralib.externfunction("free", {&opaque} -> {})
-local calloc = terralib.externfunction("calloc", {intptr, intptr} -> {&opaque})
-local realloc = terralib.externfunction("realloc", {&opaque, intptr} -> {&opaque})
+local calloc = terralib.externfunction("calloc", {intptr, intptr}-> {&opaque})
+local realloc = terralib.externfunction("realloc", {&opaque, intptr}-> {&opaque})
 local memcpy = terralib.externfunction("memcpy", {&opaque, &opaque, intptr} -> {})
 local memset = terralib.externfunction("memset", {&opaque, int32, intptr} -> {})
 
@@ -76,7 +74,7 @@ terra M.libc_allocator:free(ptr: &opaque): {}
   free(ptr)
 end
 
-terra M.libc_allocator:clear(dest: &opaque, value: int32, size: intptr): {}
+terra M.libc_allocator:clear(dest: &opaque, value: intptr, size: intptr): {}
   memset(dest, value, size)
 end
 
@@ -96,27 +94,29 @@ end
 -- Some methods can have working defaults.
 -- Some high level APIs can be derived from low level APIs
 -- By composing all of these derivations, allocators can be made easily from a minimal set of functionality.
-M.GenerateAllocator = Constraint.Meta({ RawAllocator } -> Allocator,
+M.GenerateAllocator = CT.Meta({CT.TypeConstraint(M.RawAllocator)}, CT.TypeConstraint(M.Allocator),
 function(allocator)
   if not allocator:getmethod 'alloc' then
     error "allocator doesn't have alloc defined and no default behavior is available"
   end
-  allocator.methods.allow_raw = allocator.methods.alloc
-  allocator.methods.alloc = macro(function(self, T, len)
+  allocator.methods.alloc_raw = allocator.methods.alloc
+  allocator.methods.alloc = CT.MetaExpression(function(a) return CT.Meta({CT.Pointer(allocator), CT.TypeConstraint(a), CT.Integral}, CT.Pointer(a),
+  macro(function(self, T, len)
     if not len then len = 1 end
     local type = T:astype()
     return `[&type](self:alloc_raw([terralib.sizeof(type)]*len))
-  end)
+  end)) end, CT.TerraType)
 
   if not allocator:getmethod 'free' then
     error "allocator doesn't have free defined and no default behavior is available"
   end
   allocator.methods.free_raw = allocator.methods.free
-  allocator.methods.free = macro(function(self, ptr)
+  allocator.methods.free = CT.Meta({CT.Pointer(allocator), CT.Pointer(CT.TerraType)}, nil,
+  macro(function(self, ptr)
     return quote
       self:free_raw([&opaque](ptr))
     end
-  end)
+  end))
 
   allocator.methods.clear_raw = allocator.methods.clear
   if not allocator:getmethod 'clear_raw' then
@@ -128,14 +128,15 @@ function(allocator)
       end
     end)
   end
-  allocator.methods.clear = macro(function(self, ptr, len, val)
+  allocator.methods.clear = CT.Meta({CT.Pointer(allocator), CT.Pointer(CT.TerraType), CT.Integral, CT.Integral}, nil,
+  macro(function(self, ptr, len, val)
     local type = ptr:gettype().type --base type of pointer
     if val then
       return `self:clear_raw([&opaque](ptr), len*[terralib.sizeof(type)], val)
     else
       return `self:clear_raw([&opaque](ptr), len*[terralib.sizeof(type)])
     end
-  end)
+  end))
 
   allocator.methods.calloc_raw = allocator.methods.calloc
   if not allocator:getmethod 'calloc_raw' then
@@ -146,10 +147,11 @@ function(allocator)
       return region
     end
   end
-  allocator.methods.calloc = macro(function (self, T, nelems)
+  allocator.methods.calloc = CT.MetaExpression(function(a) return CT.Meta({CT.Pointer(allocator), CT.TypeConstraint(a), CT.Integral}, CT.Pointer(a),
+  macro(function (self, T, nelems)
     local type = T:astype()
     return `self:calloc_raw([terralib.sizeof(type)], nelems)
-  end)
+  end)) end, CT.TerraType)
 
   allocator.methods.copy_raw = allocator.methods.copy
   if not allocator:getmethod 'copy_raw' then
@@ -158,12 +160,13 @@ function(allocator)
     end)
   end
 
-  allocator.methods.copy = macro(function(self, dest, src, len)
+  allocator.methods.copy = CT.MetaExpression(function(a) return CT.Meta({CT.Pointer(allocator), CT.Pointer(a),CT.Pointer(a),CT.Integral}, nil,
+  macro(function(self, dest, src, len)
     if dest:gettype() ~= src:gettype() then
       error "source and destination pointers of a copy are of different types. allocator copying cannot handle type casting or conversion."
     end
     return `self:copy_raw([&opaque](dest), [&opaque](src), len*[terralib.sizeof(dest:gettype().type)])
-  end)
+  end)) end, CT.TerraType)
 
   allocator.methods.realloc_raw = allocator.methods.realloc
   if not allocator:getmethod 'realloc_raw' then
@@ -180,14 +183,14 @@ function(allocator)
     end)
   end
   
-  allocator.methods.realloc = macro(function(self, ptr, old_size, new_size)
+  allocator.methods.realloc = CT.MetaExpression(function(a) return CT.Meta({CT.Pointer(allocator), CT.Pointer(a), CT.Integral, CT.Integral}, CT.Pointer(a),
+  macro(function(self, ptr, old_size, new_size)
     local type = ptr:gettype().type
     return quote self:realloc_raw([&opaque](ptr), old_size * [terralib.sizeof(type)], new_size * [terralib.sizeof(type)]) end
-  end)
+  end)) end, CT.TerraType)
 
   return allocator
 end)
-
 
 M.GenerateAllocator(M.libc_allocator)
 

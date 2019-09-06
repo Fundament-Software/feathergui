@@ -1,7 +1,4 @@
-local C = terralib.includecstring [[
-  #include <stdio.h>
-  #include <stdlib.h>
-]]
+local C = require 'feather.libc'
 
 local Array = require 'feather.array'
 local F = require 'feather.shared'
@@ -13,6 +10,7 @@ local Hash = require 'feather.hash'
 local cond = require 'stdlib.cond'
 local OS = require 'feather.os'
 local Constraint = require 'stdlib.constraint'
+--local String = require 'feather.string'
 
 local struct TestHarness {
   passed : int;
@@ -31,7 +29,10 @@ TestHarness.methods.Test = macro(function(self, result, expected, op)
     if operator(op, r, e) then
       self.passed = self.passed + 1
     else
-      --C.printf("Test Failed, expected %s but got %s: %s", e, r, [ result:prettystring() ])
+      --s = String:append("Test Failed, expected ", e, " but got ", r, ": ", [ result:prettystring() ])
+      --buf = s:torawstring()
+      --C.printf()
+      
       C.printf("Test Failed: %s", [ result:prettystring() ])
     end
   end
