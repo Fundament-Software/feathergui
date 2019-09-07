@@ -1,7 +1,7 @@
 C = require 'feather.libc'
 
 local Util = require 'feather.util'
-local Alloc = require 'stdlib.alloc'
+local Alloc = require 'std.alloc'
 
 local Array = Util.type_template(function(T)
 	local struct s {
@@ -13,8 +13,6 @@ local Array = Util.type_template(function(T)
 	function s.metamethods.__typename(self)
 	    return "Array("..tostring(T)..")"
 	end
-
-  s.methods.new = macro(function() return `Alloc.calloc(s, 1) end)
 
 	terra s:reserve(n : uint) : bool
     if n > self.capacity then

@@ -61,8 +61,6 @@ H.Hash = Util.type_template(function(Key, Value, Hasher, Equality)
     end
 	end
 
-  s.methods.new = macro(function() return `[&s](C.calloc(1, sizeof(s))) end)
-
   local isempty = macro(function(flag, i) return `(flag[i] and 2) end)
   local isdel = macro(function(flag, i) return `(flag[i] and 1) end)
   local iseither = macro(function(flag, i) return `(flag[i] and 3) end)

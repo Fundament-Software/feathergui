@@ -7,9 +7,9 @@ local Enum = require 'feather.enum'
 local Flags = require 'feather.flags'
 local Message = require 'feather.message'
 local Hash = require 'feather.hash'
-local cond = require 'stdlib.cond'
+local cond = require 'std.cond'
 local OS = require 'feather.os'
-local Constraint = require 'stdlib.constraint'
+local Constraint = require 'std.constraint'
 --local String = require 'feather.string'
 
 local struct TestHarness {
@@ -31,7 +31,7 @@ TestHarness.methods.Test = macro(function(self, result, expected, op)
     else
       --s = String:append("Test Failed, expected ", e, " but got ", r, ": ", [ result:prettystring() ])
       --buf = s:torawstring()
-      --C.printf()
+      --C.printf(buf)
       
       C.printf("Test Failed: %s", [ result:prettystring() ])
     end
@@ -39,7 +39,7 @@ TestHarness.methods.Test = macro(function(self, result, expected, op)
 end)
 
 terra TestHarness:array()
-  var a : &Array(int) = Array(int).new()
+  var a : Array(int)
   a:add(1)
   self:Test(a(0), 1)
   self:Test(a.size, 1)
