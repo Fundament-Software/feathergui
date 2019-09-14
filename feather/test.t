@@ -18,8 +18,8 @@ local struct TestHarness {
   total : int;
 }
 
---TestHarness.methods.Test = Constraint.Expression(function(a) return Constraint.MetaMethod(TestHarness, {a, a, Constraint.Empty + Constraint.String}, nil,
-TestHarness.methods.Test = macro(function(self, result, expected, op)
+TestHarness.methods.Test = Constraint.Expression(function(a) return Constraint.MetaMethod(TestHarness, {a, Constraint.Cast(a), Constraint.Empty + Constraint.Rawstring}, nil,
+function(self, result, expected, op)
   op = op or "__eq"
   return quote
     self.total = self.total + 1
@@ -35,8 +35,7 @@ TestHarness.methods.Test = macro(function(self, result, expected, op)
       C.printf("Test Failed: %s", [ result:prettystring() ])
     end
   end
-end)
---end) end, Constraint.TerraType)
+end) end, Constraint.TerraType)
 
 terra TestHarness:array()
   var a : Array(int)
@@ -301,11 +300,11 @@ do
     f(nil)
   end
   
+  testconstraint(Constraint.TerraType, function(v) return terralib.types.istype(v) end)
   testconstraint(Constraint.Number, function(v) return type(v) == "number" end)
   testconstraint(Constraint.String, function(v) return type(v) == "string" end)
   testconstraint(Constraint.Table, function(v) return type(v) == "table" end)
   testconstraint(Constraint.LuaValue, function(v) return v ~= nil end)
-  testconstraint(Constraint.TerraType, function(v) return terralib.types.istype(v) end)
   testconstraint(Constraint.Integral, function(v) return terralib.types.istype(v) and v:isintegral() end)
   testconstraint(Constraint.Float, function(v) return terralib.types.istype(v) and v:isfloat() end)
   testconstraint(Constraint.Pointer(float, 0), function(v) return v == float end)
@@ -449,17 +448,33 @@ do
   expect(nest, false, 3, inner, 3)
   expect(nest, false, 3, innerbad, wrap)
 
+  expect(nest, true, 3, macro(function(a) return a end, function(a) return a end), wrap)
+
+  expect(Constraint.Negative("f") + Constraint.Field("f", Constraint.Field("foobar", float) * Constraint.Field("meta", bool)), true, nested)
+  expect(Constraint.Negative("f") + Constraint.Field("f2", Constraint.Field("foobar", float) * Constraint.Field("meta", bool)), false, nested)
+  expect(Constraint.Negative("f") + Constraint.Field("f", Constraint.Field("foobar", int) * Constraint.Field("meta", bool)), false, nested)
+  expect(Constraint.Negative("f") + Constraint.Field("f2", Constraint.Field("foobar", float) * Constraint.Field("meta", bool)), false, nested)
   --local nest = Constraint.Meta(Constraint.Number, Constraint.Function({Constraint.Number, Constraint.Function({int}, int)}, Constraint.Number), function(a, b) return b(a, inner) end)
   
-  --optional argument
+  local opt = Constraint.Meta({Constraint.Empty + Constraint.Number}, Constraint.Number, function(a) return 3 end)
+  expect(opt, true, 2)
+  expect(opt, true)
+  expect(opt, false, 2, 2)
 
-  --optional return value
+  local opt2 = Constraint.Meta({Constraint.Empty + Constraint.Number}, Constraint.Empty + Constraint.Number, function(a) return a end)
+  expect(opt2, true, 2)
+  expect(opt2, true)
+  expect(opt2, false, 2, 2)
 
-  --overloaded function check (TODO)
+  expect(Constraint.Meta({Constraint.Empty + Constraint.String}, Constraint.Empty + Constraint.String, function(a) return a end), true, "asdf")
 
-  --optional argument with overloaded function check
-
-  --macro escape hatch  
+  fiddle.methods["over"] = terralib.overloadedfunction("overload", { terra(self: &fiddle, s : int) : int return s end, terra(self: &fiddle, s : rawstring) : rawstring return s end })
+  testmethod({int}, int, false, nil, true, fiddle, "over")
+  testmethod({rawstring}, rawstring, false, nil, true, fiddle, "over")
+  testmethod({rawstring}, int, false, nil, false, fiddle, "over")
+  testmethod({Constraint.Value(rawstring) + int}, int, false, nil, true, fiddle, "over")
+  testmethod({Constraint.Empty + int}, int, false, nil, true, fiddle, "over")
+  testmethod({Constraint.Empty + int}, rawstring, false, nil, false, fiddle, "over")
 end
 
 terra TestHarness:constraint()
