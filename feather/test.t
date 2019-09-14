@@ -10,6 +10,7 @@ local Hash = require 'feather.hash'
 local cond = require 'std.cond'
 local OS = require 'feather.os'
 local Constraint = require 'std.constraint'
+local List = require 'std.terralist'
 --local String = require 'feather.string'
 
 local struct TestHarness {
@@ -17,11 +18,9 @@ local struct TestHarness {
   total : int;
 }
 
+--TestHarness.methods.Test = Constraint.Expression(function(a) return Constraint.MetaMethod(TestHarness, {a, a, Constraint.Empty + Constraint.String}, nil,
 TestHarness.methods.Test = macro(function(self, result, expected, op)
   op = op or "__eq"
-  if self:gettype() ~= TestHarness then
-    error ("self must point to TestHarness: " .. self:gettype():layoutstring())
-  end
   return quote
     self.total = self.total + 1
     var r = result
@@ -37,6 +36,7 @@ TestHarness.methods.Test = macro(function(self, result, expected, op)
     end
   end
 end)
+--end) end, Constraint.TerraType)
 
 terra TestHarness:array()
   var a : Array(int)
@@ -279,6 +279,191 @@ terra TestHarness:vec()
   b.x = a.x
   b.y = a.y
   self:Test(a, b)
+end
+
+do
+  local primitives = List{int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, bool, function() end,
+    float, double, tuple(), tuple(int, float), int32[8], vector(float, 4), "string", 3.14, {}, {"fake"}, `6, `3.2,
+    &float, &&float }
+
+  local constraints = { Constraint.Number, Constraint.String, Constraint.Table, Constraint.LuaValue, Constraint.TerraType,
+    Constraint.Field, Constraint.Method, Constraint.Integral, Constraint.Float, Constraint.Pointer, Constraint.Type,
+    Constraint.Value, Constraint.Empty, Constraint.BasicConstraint, function(e) return Constraint.BasicConstraint(e, true) end }
+
+  local function testconstraint(target, pred)
+    local f = function(v) 
+      local ok, err = pcall(target, v)
+      if ok ~= pred(v) then
+        error ("Expected "..tostring(target).." to return "..tostring(pred(v)).." for "..tostring(v).." but got "..tostring(ok))
+      end
+    end
+    primitives:app(f)
+    f(nil)
+  end
+  
+  testconstraint(Constraint.Number, function(v) return type(v) == "number" end)
+  testconstraint(Constraint.String, function(v) return type(v) == "string" end)
+  testconstraint(Constraint.Table, function(v) return type(v) == "table" end)
+  testconstraint(Constraint.LuaValue, function(v) return v ~= nil end)
+  testconstraint(Constraint.TerraType, function(v) return terralib.types.istype(v) end)
+  testconstraint(Constraint.Integral, function(v) return terralib.types.istype(v) and v:isintegral() end)
+  testconstraint(Constraint.Float, function(v) return terralib.types.istype(v) and v:isfloat() end)
+  testconstraint(Constraint.Pointer(float, 0), function(v) return v == float end)
+  testconstraint(Constraint.Pointer(float), function(v) return v == &float end)
+  testconstraint(Constraint.Pointer(float, 2), function(v) return v == &&float end)
+  testconstraint(Constraint.Type(Constraint.Integral), function(v) return terralib.types.istype(v) and v:isintegral() end)
+  testconstraint(Constraint.Value(Constraint.Integral), function(v) return type(v) == "table" and v.gettype ~= nil and v:gettype():isintegral() end)
+  testconstraint(Constraint.Empty, function(v) return v == nil end)
+  testconstraint(Constraint.BasicConstraint(uint8), function(v) return v == uint8 end)
+  testconstraint(Constraint.BasicConstraint(int8, true), function(v) return v == bool or (terralib.types.istype(v) and v:isarithmetic()) end)
+
+  local function testfunction(params, ret, vararg, expected, fn) 
+    local ok, err = pcall(Constraint.Function(params, ret, vararg), fn)
+    if ok ~= expected then
+      error ("Expected "..tostring(expected).." but got "..tostring(ok).." for "..tostring(params).." : "..tostring(ret))
+    end
+  end
+
+  testfunction({}, nil, nil, true, terra() end)
+  testfunction({}, tuple(), nil, true, terra() end)
+  testfunction({}, nil, Constraint.Integral, true, terra() end)
+  testfunction({}, nil, nil, true, Constraint.Meta({}, nil, function() end))
+  testfunction({}, tuple(), nil, true, Constraint.Meta({}, nil, function() end))
+  testfunction({}, nil, Constraint.Integral, true, Constraint.Meta({}, nil, function() end))
+  testfunction({}, nil, nil, true, Constraint.Meta({}, tuple(), function() end))
+  
+  local primtypes = primitives:filter(function(e) return terralib.types.istype(e) end)
+  primtypes:app(function(e) return testfunction({e}, nil, nil, true, Constraint.Meta({e}, nil, function() end)) end)
+  primtypes:app(function(e) return testfunction({bool}, nil, nil, e == bool, Constraint.Meta({e}, nil, function() end)) end)
+  primtypes:app(function(e) return testfunction({bool}, nil, nil, e == bool, terra(asdf: e) end) end)
+  
+  primtypes:app(function(e) return testfunction({}, e, nil, true, Constraint.Meta({}, e, function() end)) end)
+  primtypes:app(function(e) return testfunction({}, bool, nil, e == bool, Constraint.Meta({}, e, function() end)) end)
+  primtypes:app(function(e) return testfunction({e}, e, nil, true, Constraint.Meta({e}, e, function() end)) end)
+  primtypes:app(function(e) return testfunction({e}, e, nil, true, terra(asdf: e) : e end) end)
+  primtypes:app(function(e) return testfunction({bool}, bool, nil, e == bool, Constraint.Meta({e}, e, function() end)) end)
+  primtypes:app(function(e) return testfunction({bool}, bool, nil, e == bool, terra(asdf: e) : e end) end)
+
+  testfunction({int, int}, int, nil, false, Constraint.Meta({int}, int, function() end))
+  testfunction({int, int}, int, nil, false, Constraint.Meta({int, int}, nil, function() end))
+  testfunction({int, int}, int, nil, false, Constraint.Meta({}, int, function() end))
+  testfunction({}, int, nil, false, Constraint.Meta({int}, int, function() end))
+  testfunction({int}, nil, nil, false, Constraint.Meta({int}, int, function() end))
+  testfunction({int, int}, int, nil, false, terra(asdf: int) : int end)
+  testfunction({int, int}, int, nil, false, terra(asdf: int, a: int) : {} end)
+  testfunction({int, int}, int, nil, false, terra() : int end)
+  testfunction({}, int, nil, false, terra(asdf: int) : int end)
+  testfunction({int}, nil, nil, false, terra(asdf: int) : int end)
+  testfunction({int}, {int, int}, nil, false, terra(asdf: int) : int end)
+
+  primtypes:app(function(e) return testfunction({e, e}, e, nil, true, terra(a: e, b: e) : e end) end)
+  primtypes:app(function(e) return testfunction({e, e}, e, nil, true, Constraint.Meta({e, e}, e, function() end)) end)
+  primtypes:app(function(e) return testfunction({e, e}, {e, e}, nil, true, terra(a: e, b: e) : {e, e} end) end)
+
+  local function testmethod(params, ret, static, vararg, expected, fn, name)
+    name = name or "foobar"
+    local s = fn
+    if not s.isstruct or not s:isstruct() then
+      s = struct{}
+      s.methods[name] = fn
+    end
+    local ok, err = pcall(Constraint.MethodConstraint(name, params, ret, static, vararg), s)
+    if ok ~= expected then
+      error ("Expected "..tostring(expected).." but got "..tostring(ok).." for "..tostring(params).." : "..tostring(ret))
+    end
+  end
+
+  function expect(constraint, expect, ...)
+    local ok, err = pcall(constraint, ...)
+    if ok ~= expect then
+      error ("Expected "..tostring(constraint).." to return "..tostring(expect).." for "..tostring(unpack({...})).." but got "..tostring(ok))
+    end
+  end
+
+  testmethod({}, nil, true, nil, true, terra() end)
+  testmethod({}, tuple(), true, nil, true, terra() end)
+  testmethod({}, nil, true, Constraint.Integral, true, terra() end)
+  testmethod({}, nil, true, nil, true, Constraint.Meta({}, nil, function() end))
+  testmethod({}, tuple(), true, nil, true, Constraint.Meta({}, nil, function() end))
+  testmethod({}, nil, true, Constraint.Integral, true, Constraint.Meta({}, nil, function() end))
+  testmethod({}, nil, true, nil, true, Constraint.Meta({}, tuple(), function() end))
+
+  testmethod({}, nil, true, nil, false, terra(self : int) end)
+  testmethod({}, nil, true, nil, false, Constraint.Meta({int}, tuple(), function() end))
+  testmethod({}, nil, false, nil, false, terra() end)
+  testmethod({}, nil, false, nil, false, Constraint.Meta({}, tuple(), function() end))
+
+  local fiddle = struct{ foobar : float, meta : bool }
+  fiddle.methods["terra"] = terra(self : &fiddle) : {} end
+  fiddle.methods["ret"] = terra(self : &fiddle) : int end
+  fiddle.methods["param"] = terra(self : &fiddle, a : int) : int end
+  fiddle.methods["meta"] = Constraint.MetaMethod(fiddle, {}, tuple(), function(self) end)
+  fiddle.methods["metaret"] = Constraint.MetaMethod(fiddle, {}, int, function(self) end)
+  fiddle.methods["metaparam"] = Constraint.MetaMethod(fiddle, {int}, int, function(self) end)
+  
+  testmethod({}, nil, false, nil, true, fiddle, "terra")
+  testmethod({}, int, false, nil, true, fiddle, "ret")
+  testmethod({int}, int, false, nil, true, fiddle, "param")
+  testmethod({}, nil, false, nil, true, fiddle, "meta")
+  testmethod({}, int, false, nil, true, fiddle, "metaret")
+  testmethod({int}, int, false, nil, true, fiddle, "metaparam")
+  testmethod({}, int, false, nil, false, fiddle, "metaparam")
+
+  expect(Constraint.Negative("terra", false), true, fiddle)
+  List{"foobar", "asdf", ""}:app(function(s) expect(Constraint.Negative(s, true), true, fiddle) end)
+
+  primtypes:app(function(e) return expect(Constraint.Field("meta", e), e == bool, fiddle) end)
+  expect(Constraint.Field("foobar", Constraint.Float), true, fiddle)
+
+  local nested = struct{ f : fiddle }
+
+  expect(Constraint.Field("f", Constraint.MakeConstraint(fiddle)), true, nested)
+  expect(Constraint.Field("f", Constraint.Field("foobar", float) * Constraint.Field("meta", bool)), true, nested)
+  expect(Constraint.Field("f", Constraint.MakeConstraint(float)), false, nested)
+  expect(Constraint.Field("f", Constraint.Field("foobar", int) * Constraint.Field("meta", bool)), false, nested)
+
+  testfunction({Constraint.Type(int)}, nil, nil, true, Constraint.Meta({Constraint.Type(int)}, nil, function(a) end))
+  testfunction({Constraint.Type(int)}, nil, nil, false, Constraint.Meta({int}, nil, function(a) end))
+  testfunction({}, Constraint.Type(int64), nil, true, Constraint.Meta({}, Constraint.Type(int64), function() return int64 end))
+  testfunction({}, Constraint.Type(int64), nil, false, Constraint.Meta({}, int64, function() return int64 end))
+  
+  local topointer = Constraint.Expression(function(a) return Constraint.Meta({Constraint.Pointer(a, 0)}, Constraint.Pointer(a, 1), function(e) return `&[e] end) end, Constraint.TerraType)
+  expect(topointer, true, quote var a : int = 3 in a end)
+  expect(topointer, true, quote var a : bool = true in a end)
+  expect(topointer:Types(int), true, quote var a : int = 3 in a end)
+  expect(topointer:Types(float), false, quote var a : int = 3 in a end)
+
+  local inner = terra(a : int) : int return a end
+  local innerbad = terra(a : float) : int return a end
+  local wrap = Constraint.Meta({Constraint.Number, Constraint.Function({int}, int)}, Constraint.Number, function(a, b) return b(a) end)
+  expect(wrap, true, 3, inner)
+  expect(wrap, false, `3, inner)
+  expect(wrap, false, 3, innerbad)
+
+  local nest = Constraint.Meta({Constraint.Number, Constraint.Function({int}, int), Constraint.Function({Constraint.Number, Constraint.Function({int}, int)}, Constraint.Number)}, Constraint.Number, function(a, b, c) return c(a, b) end)
+  expect(nest, true, 3, inner, wrap)
+  expect(nest, false, 3, wrap, wrap)
+  expect(nest, false, 3, inner, inner)
+  expect(nest, false, `3, inner, wrap)
+  expect(nest, false, 3, 3, wrap)
+  expect(nest, false, 3, inner, 3)
+  expect(nest, false, 3, innerbad, wrap)
+
+  --local nest = Constraint.Meta(Constraint.Number, Constraint.Function({Constraint.Number, Constraint.Function({int}, int)}, Constraint.Number), function(a, b) return b(a, inner) end)
+  
+  --optional argument
+
+  --optional return value
+
+  --overloaded function check (TODO)
+
+  --optional argument with overloaded function check
+
+  --macro escape hatch  
+end
+
+terra TestHarness:constraint()
+
 end
 
 local SUBTESTLEN = 11
