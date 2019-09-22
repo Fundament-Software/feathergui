@@ -115,8 +115,6 @@ struct B.Display {
   primary : bool
 }
 
-struct Element {}
-
 struct DynamicBackend {
   drawFont : {&DynamicBackend, &opaque, &B.Font, &opaque, &F.Rect, F.Color, float, float, float, B.AntiAliasing} -> F.Err
   drawAsset : {&DynamicBackend, &opaque, &B.Asset, &F.Rect, &F.Rect, F.Color, float} -> F.Err
@@ -152,7 +150,7 @@ struct DynamicBackend {
   destroy : {&DynamicBackend} -> {}
   getMonitorIndex : {&DynamicBackend, uint, &B.Display} -> {F.Err}
   getMonitor : {&DynamicBackend, uint64, &B.Display} -> {F.Err}
-  spawnWindow : {&Element, &F.Rect, rawstring} -> {&opaque}
+  spawnWindow : {&opaque, &F.Rect, rawstring} -> {&opaque}
   despawnWindow : {&opaque} -> F.Err
 
   features : B.Features

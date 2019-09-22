@@ -11,6 +11,9 @@ local cond = require 'std.cond'
 local OS = require 'feather.os'
 local Constraint = require 'std.constraint'
 local List = require 'std.terralist'
+local Object = require 'std.object'
+local Unique = require 'std.unique'
+
 --local String = require 'feather.string'
 
 local struct TestHarness {
@@ -18,7 +21,7 @@ local struct TestHarness {
   total : int;
 }
 
-TestHarness.methods.Test = Constraint.Expression(function(a) return Constraint.MetaMethod(TestHarness, {a, Constraint.Cast(a), Constraint.Empty + Constraint.Rawstring}, nil,
+TestHarness.methods.Test = Constraint(function(a) return Constraint.MetaMethod(TestHarness, {a, Constraint.Cast(a), Constraint.Optional(Constraint.Rawstring)}, nil,
 function(self, result, expected, op)
   op = op or "__eq"
   return quote
@@ -426,7 +429,7 @@ do
   testfunction({}, Constraint.Type(int64), nil, true, Constraint.Meta({}, Constraint.Type(int64), function() return int64 end))
   testfunction({}, Constraint.Type(int64), nil, false, Constraint.Meta({}, int64, function() return int64 end))
   
-  local topointer = Constraint.Expression(function(a) return Constraint.Meta({Constraint.Pointer(a, 0)}, Constraint.Pointer(a, 1), function(e) return `&[e] end) end, Constraint.TerraType)
+  local topointer = Constraint(function(a) return Constraint.Meta({Constraint.Pointer(a, 0)}, Constraint.Pointer(a, 1), function(e) return `&[e] end) end, Constraint.TerraType)
   expect(topointer, true, quote var a : int = 3 in a end)
   expect(topointer, true, quote var a : bool = true in a end)
   expect(topointer:Types(int), true, quote var a : int = 3 in a end)
@@ -475,10 +478,31 @@ do
   testmethod({Constraint.Value(rawstring) + int}, int, false, nil, true, fiddle, "over")
   testmethod({Constraint.Empty + int}, int, false, nil, true, fiddle, "over")
   testmethod({Constraint.Empty + int}, rawstring, false, nil, false, fiddle, "over")
+
+  expect(Constraint.IsConstraint, true, Constraint.IsConstraint)
+  expect(Constraint.IsConstraint, false, {})
 end
 
-terra TestHarness:constraint()
+local ObjectTest = struct{ i : bool, d : bool }
+terra ObjectTest:init()
+  Object._init(self, { true, false })
+end
+terra ObjectTest:destruct()
+  self.d = true
+end
 
+terra TestHarness:object()
+  var obj : ObjectTest = ObjectTest{ false, false }
+  self:Test(obj.i, false)
+  self:Test(obj.d, false)
+
+  Object.init(obj)
+  self:Test(obj.i, true)
+  self:Test(obj.d, false)
+
+  Object.destruct(obj)
+  self:Test(obj.i, true)
+  self:Test(obj.d, true)
 end
 
 local SUBTESTLEN = 11

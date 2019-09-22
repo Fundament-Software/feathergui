@@ -1,3 +1,5 @@
+local CT = require 'std.constraint'
+
 local function GetBitMask(low, high)
   return bit.lshift((bit.lshift(2, ((high)-(low)))-1), low)
 end
@@ -9,7 +11,12 @@ local function GetBitType(count)
   return uint32
 end
 
-local Color = terralib.memoize(function(abits, rbits, gbits, bbits)
+local M = {}
+local M_mt = {}
+local lookup = {b = 1, g = 2, r = 3, a = 4}
+
+-- Simple integral color representation, designed to mimic GPU color formats which may have uneven bit distributions
+M_mt.__call = terralib.memoize(function(self, abits, rbits, gbits, bbits)
   local struct s {
     v : GetBitType(abits + rbits + gbits + bbits)
   }
@@ -17,7 +24,6 @@ local Color = terralib.memoize(function(abits, rbits, gbits, bbits)
   s.metamethods.type = s.entries[1].type
   s.metamethods.N = {abits, rbits, gbits, bbits}
   s.metamethods.__typename = function(self) return ("Color:%s[%d:%d:%d:%d]"):format(tostring(self.metamethods.type),self.metamethods.N[1],self.metamethods.N[2],self.metamethods.N[3],self.metamethods.N[4]) end
-  local lookup = {"b", "g", "r", "a"}
 
   local lookuplow = {b = 0, g = bbits, r = gbits + bbits, a = rbits + gbits + bbits }
   local lookuphigh = {b = bbits - 1, g = gbits + bbits - 1, r = rbits + gbits + bbits - 1, a = abits + rbits + gbits + bbits - 1 }
@@ -31,7 +37,7 @@ local Color = terralib.memoize(function(abits, rbits, gbits, bbits)
    
   s.metamethods.__setentry = macro(function(entryname, expr, value)
     if not value:gettype():isintegral() then
-      error "tried to set color to something non-integral type"
+      error "tried to set color to non-integral type"
     end
     if lookuplow[entryname] then
       return quote expr.v = (expr.v and not [ GetBitMask(lookuplow[entryname], lookuphigh[entryname]) ]) or ((value << [ lookuplow[entryname] ]) and [ GetBitMask(lookuplow[entryname], lookuphigh[entryname]) ] ) end
@@ -43,4 +49,26 @@ local Color = terralib.memoize(function(abits, rbits, gbits, bbits)
   return s
 end)
 
-return Color
+-- Generic color representation using half-precision floats, suitable for storing most color formats in most color spaces
+--M.H = Ct.Meta({}, 
+M.H = struct{ v : uint16[4] }
+M.H.metamethods.__typename = function(self) return "ColorH" end
+M.H.metamethods.__entrymissing = macro(function(entryname, expr)
+  if lookup[entryname] then
+      return `expr.v[ lookup[entryname] ]
+  else
+    error (entryname.." is not a valid color component.")
+  end
+end)
+M.H.metamethods.__setentry = macro(function(entryname, expr, value)
+  if not value:gettype():isarithmetic() then
+    error "tried to set color to non-arithmetic type"
+  end
+  if lookup[entryname] then
+    return quote expr.v = value end
+  else
+    error (entryname.." is not a valid color component.")
+  end
+end)
+
+return setmetatable(M, M_mt)

@@ -14,6 +14,19 @@ local Array = Util.type_template(function(T)
 	    return "Array("..tostring(T)..")"
 	end
 
+  terra s:init() : {}
+    self.data = nil
+    self.size = 0
+    self.capacity = 0
+  end
+
+  terra s:destruct() : {}
+    if self.data ~= nil then
+      Alloc.free(self.data)
+    end
+    self:init() -- this zeroes everything to prevent multiple free attempts
+  end
+
 	terra s:reserve(n : uint) : bool
     if n > self.capacity then
       var ptr = Alloc.realloc(self.data, self.capacity, n)
@@ -63,13 +76,6 @@ local Array = Util.type_template(function(T)
   terra s:clear() : {}
     self.size = 0
   end
-
-	terra s:free() : {}
-    if self.data ~= nil then
-		  Alloc.free(self.data)
-    end
-    Alloc.free(self)
-	end
 
 	s.metamethods.__apply = macro(function(self,idx)
 		return `self.data[idx]
