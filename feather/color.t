@@ -51,7 +51,7 @@ end)
 
 -- Generic color representation using half-precision floats, suitable for storing most color formats in most color spaces
 --M.H = Ct.Meta({}, 
-M.H = struct{ v : uint16[4] }
+struct M.H { v : uint16[4] }
 M.H.metamethods.__typename = function(self) return "ColorH" end
 M.H.metamethods.__entrymissing = macro(function(entryname, expr)
   if lookup[entryname] then

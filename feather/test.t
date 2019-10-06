@@ -13,6 +13,7 @@ local Constraint = require 'std.constraint'
 local List = require 'std.terralist'
 local Object = require 'std.object'
 local Unique = require 'std.unique'
+local Alloc = require 'std.alloc'
 
 --local String = require 'feather.string'
 
@@ -33,7 +34,7 @@ function(self, result, expected, op)
     else
       --s = String:append("Test Failed, expected ", e, " but got ", r, ": ", [ result:prettystring() ])
       --buf = s:torawstring()
-      --C.printf(buf)
+      --C.printf(bf)
       
       C.printf("Test Failed: %s", [ result:prettystring() ])
     end
@@ -77,8 +78,30 @@ terra TestHarness:array()
   self:Test(a(0), 1)
 end
 
+local UIMock = struct{}
+
 terra TestHarness:backend()
 
+end
+
+local printraw = macro(function(a) terralib.printraw(a:gettype()) return `a == a end)
+local checktype = macro(function(a, b) return a:gettype() == b:astype() end)
+
+terra TestHarness:alloc()
+  var test = Alloc.alloc(int8, 5)
+  self:Test(checktype(test, [&int8]), true)
+  Alloc.clear(test, 5, 64)
+  for i = 0,5 do self:Test(test[i], 64) end
+  test = Alloc.realloc(test, 5, 10)
+  for i = 0,5 do self:Test(test[i], 64) end
+  Alloc.copy(test + 5, test, 5)
+  for i = 0,10 do self:Test(test[i], 64) end
+  Alloc.clear(test, 10, 0)
+  for i = 0,10 do self:Test(test[i], 0) end
+  Alloc.free(test)
+  var test2 = Alloc.calloc(float, 4)
+  for i = 0,4 do self:Test(test2[i], 0.0) end
+  Alloc.free(test2)
 end
 
 terra TestHarness:color()

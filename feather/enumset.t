@@ -1,4 +1,4 @@
-return function(lst)
+return function(pairs)
   local struct e {
     v: uint
   }
@@ -6,9 +6,13 @@ return function(lst)
   terra e.metamethods.__eq(a : e, b : e) : bool return a.v == b.v end
   terra e.metamethods.__ne(a : e, b : e) : bool return a.v ~= b.v end
 
-  for i, name in ipairs(lst) do 
-    e.methods[name] = constant(`[e]{(i - 1)})
+  function build(name, value, ...)
+    if value ~= nil then
+      e.methods[name] = constant(`[e]{[uint](value)})
+      build(...)
+    end
   end
   
+  build(unpack(pairs))
   return e
 end

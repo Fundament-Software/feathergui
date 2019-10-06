@@ -29,4 +29,6 @@ struct S.UVec {
   rel : S.Vec
 }
 
+function S.camelCase(k) return string.lower(k:sub(1,1)) .. k:sub(2, -1) end
+
 return S
