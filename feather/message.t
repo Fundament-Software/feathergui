@@ -1,5 +1,6 @@
 local F = require 'feather.shared'
 local Enum = require 'feather.enum'
+local Switch = require 'std.switch'
 
 local M = {}
 M.Idx = uint16
@@ -43,6 +44,12 @@ terra M.Reciever:DragDrop() : F.Err return 0 end
 
 local msgenum = {}
 
+struct M.Msg {
+  type : M.Idx
+  subtype : M.Idx
+  union {}
+}
+
 -- Go through all our message functions and generate the parameter and result unions (TODO: sort these)
 for k, v in pairs(M.Reciever.methods) do
     local s = struct{}
@@ -54,18 +61,21 @@ for k, v in pairs(M.Reciever.methods) do
     table.insert(msgenum, string.upper(k))
 end
 
+M.Kind = Enum(msgenum, M.Idx)
+M.Msg.entries[1].type = M.Kind -- Set this to the correct enumeration type
+
 if terralib.sizeof(M.Result) ~= terralib.sizeof(intptr) then
   error("Msg.Result ("..terralib.sizeof(M.Result)..") should be the size of a pointer ("..terralib.sizeof(intptr)..")")
 end
 
-M.Kind = Enum(msgenum)
-
---function M.MakeBehaviorFunction(T) 
---  for k, v in pairs(T.methods) do
---    if M.Reciever.methods[k] ~= nil then
---
---    end
---  end
---end
+function M.MakeBehaviorFunction(T) 
+  local pairs = {}
+  local self = symbol(T)
+  for k, v in pairs(T.methods) do
+    if M.Reciever.methods[k] ~= nil then
+      pairs[msgenum(string.upper(k))] = quote return [self]:[k]() end
+    end
+  end
+end
 
 return M

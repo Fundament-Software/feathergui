@@ -1,6 +1,6 @@
-return function(pairs)
+return function(pairs, type)
   local struct e {
-    v: uint
+    v: type or uint
   }
 
   terra e.metamethods.__eq(a : e, b : e) : bool return a.v == b.v end

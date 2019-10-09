@@ -10,10 +10,10 @@ local Hash = require 'feather.hash'
 local cond = require 'std.cond'
 local OS = require 'feather.os'
 local Constraint = require 'std.constraint'
-local List = require 'std.terralist'
+local List = require 'terralist'
 local Object = require 'std.object'
-local Unique = require 'std.unique'
 local Alloc = require 'std.alloc'
+local Switch = require 'std.switch'
 
 --local String = require 'feather.string'
 
@@ -526,6 +526,16 @@ terra TestHarness:object()
   Object.destruct(obj)
   self:Test(obj.i, true)
   self:Test(obj.d, true)
+end
+
+terra TestHarness:switch()
+  var a : int = 999
+  Switch(a, 
+    3, [quote a = 3 end],
+    1, [quote a = 1 end],
+    999, [quote a = 9 end],
+    [quote a = 10 end])
+  self:Test(a, 9)
 end
 
 local SUBTESTLEN = 11
