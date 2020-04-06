@@ -1,6 +1,5 @@
 local F = require 'feather.shared'
 local Enum = require 'feather.enum'
-local Switch = require 'std.switch'
 
 local M = {}
 M.Idx = uint16
@@ -14,8 +13,6 @@ struct M.Msg {
 struct M.Result {
   union {}
 }
-
--- fgBehaviorFunction = {fgRoot&, fgElement&, fgMessage&} -> fgMessageResult
 
 struct M.Reciever {}
 
@@ -50,8 +47,15 @@ struct M.Msg {
   union {}
 }
 
--- Go through all our message functions and generate the parameter and result unions (TODO: sort these)
-for k, v in pairs(M.Reciever.methods) do
+methods = {}
+for k in pairs(M.Reciever.methods) do
+  table.insert(methods, k)
+end
+table.sort(methods)
+
+-- Go through all our message functions and generate the parameter and result unions
+for i, k in ipairs(methods) do
+    local v = M.Reciever.methods[k]
     local s = struct{}
     s.name = "Msg"..k
     k = F.camelCase(k)
@@ -68,6 +72,15 @@ if terralib.sizeof(M.Result) ~= terralib.sizeof(intptr) then
   error("Msg.Result ("..terralib.sizeof(M.Result)..") should be the size of a pointer ("..terralib.sizeof(intptr)..")")
 end
 
+-- This needs to take the base type, and then call MakeBehaviorFunction recursively on that so that only one switch statement
+-- pointing to the highest possible function level is created with zero indirection. This may require figuring out what
+-- functions have already been added to the switch statement somehow.
+
+function M.MakeBehaviorSwitch(lst, T)
+
+end
+
+-- Alternatively we can simply use the result of __methodmissing to figure out what the function should've resolved to
 function M.MakeBehaviorFunction(T) 
   local pairs = {}
   local self = symbol(T)
@@ -77,5 +90,7 @@ function M.MakeBehaviorFunction(T)
     end
   end
 end
+
+M.BehaviorFunction = {&opaque, &opaque, &M.Msg} -> M.Result
 
 return M

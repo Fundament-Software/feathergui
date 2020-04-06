@@ -1,4 +1,5 @@
 local Vec = require 'feather.vec'
+local Math = require 'std.math'
 
 local Rect = terralib.memoize(function(T)
   local struct s {
@@ -8,6 +9,7 @@ local Rect = terralib.memoize(function(T)
   s.metamethods.type, s.metamethods.N = T, 4
   s.metamethods.__typename = function(self) return ("Rect:%s"):format(tostring(self.metamethods.type)) end
   s.metamethods.__apply = macro(function(self, index) return `self.data[index] end)
+  s.methods.Zero = constant(`[s]{array([T](0),[T](0),[T](0),[T](0))})
 
   local ops = { "__sub","__add","__mul","__div" }
   for _, op in ipairs(ops) do
@@ -24,6 +26,27 @@ local Rect = terralib.memoize(function(T)
     local terra TS_op(a : T, b : s) return array_op(array(a, a, a, a), b.data) end
     
     s.metamethods[op] = terralib.overloadedfunction("array_op", { SS_op, ST_op, TS_op })
+  end
+
+  terra s:Union(x : s) : s
+    var b : s
+    b.data[0] = Math.min(self.data[0], x.data[0]);
+    b.data[1] = Math.min(self.data[1], x.data[1]);
+    b.data[2] = Math.max(self.data[2], x.data[2]);
+    b.data[3] = Math.max(self.data[3], x.data[3]);
+    return b
+  end
+
+  terra s:Intersection(x : s) : s
+    var b : s
+    b.data[0] = Math.max(self.data[0], x.data[0]);
+    b.data[1] = Math.max(self.data[1], x.data[1]);
+    b.data[2] = Math.min(self.data[2], x.data[2]);
+    b.data[3] = Math.min(self.data[3], x.data[3]);
+    if b.data[0] > b.data[2] or b.data[1] > b.data[3] then
+      return s.Zero
+    end
+    return b
   end
 
   terra s.metamethods.__eq(a : s, b : s)

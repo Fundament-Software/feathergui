@@ -13,7 +13,9 @@ local Constraint = require 'std.constraint'
 local List = require 'terralist'
 local Object = require 'std.object'
 local Alloc = require 'std.alloc'
-local Switch = require 'std.switch'
+local P = require 'feather.partitioner'
+local SimplePartition = require 'feather.partition_simple'
+local Math = require 'std.math'
 
 --local String = require 'feather.string'
 
@@ -43,6 +45,7 @@ end) end, Constraint.TerraType)
 
 terra TestHarness:array()
   var a : Array(int)
+  a:init()
   a:add(1)
   self:Test(a(0), 1)
   self:Test(a.size, 1)
@@ -528,14 +531,29 @@ terra TestHarness:object()
   self:Test(obj.d, true)
 end
 
-terra TestHarness:switch()
+terra TestHarness:switchstat()
   var a : int = 999
-  Switch(a, 
-    3, [quote a = 3 end],
-    1, [quote a = 1 end],
-    999, [quote a = 9 end],
-    [quote a = 10 end])
+  switch a do 
+    case 3 then 
+      a = 3
+    case 1 then
+      a = 1
+    case 999 then
+      a = 9
+    else
+      a = 10
+  end
+  
   self:Test(a, 9)
+end
+
+P(SimplePartition)
+
+terra TestHarness:partition()
+  var simple : SimplePartition
+  simple:init()
+  
+  simple:destruct()
 end
 
 local SUBTESTLEN = 11

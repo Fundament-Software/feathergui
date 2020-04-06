@@ -1,5 +1,4 @@
-C = require 'feather.libc'
-
+local C = require 'feather.libc'
 local Util = require 'feather.util'
 local Alloc = require 'std.alloc'
 

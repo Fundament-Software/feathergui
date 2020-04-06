@@ -20,6 +20,8 @@ if ffi.os == "Windows" then
 #define NOMCX
 #define NOSERVICE
 #define NOHELP
+// this is due to a conflict in clang, so we force windows to discard it's version
+#define _m_prefetchw _m_prefetchw_UNUSED
 #include <windows.h>
 #pragma pack(pop)
 

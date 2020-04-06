@@ -1,6 +1,8 @@
 local Backend = require 'feather.backend'
 local Test = require 'feather.test'
 
-local flags = {"\\legacy_stdio_definitions.lib"}
-terralib.saveobj("feather.exe", {main = Test.main}, flags)
+if terralib.saveobj("feather.exe", {main = Test.main}) ~= nil then
+  return -1
+end
 Test.main(0, nil)
+return 0

@@ -8,6 +8,7 @@ local Flags = require 'feather.flags'
 local Enum = require 'feather.enum'
 local OS = require 'feather.os'
 local Alloc = require 'std.alloc'
+local M = require 'feather.message'
 
 B.Features = Flags{
   "TEXT_ANTIALIAS", 
@@ -111,7 +112,9 @@ struct B.Asset {
 
 struct B.Display {
   size : F.Veci
+  offset : F.Veci
   dpi : F.Vec
+  scale : float
   handle : uint64
   primary : bool
 }
@@ -154,13 +157,16 @@ terra DynamicBackend:GetClipboard(kind : B.Clipboard, target : &opaque, count : 
 terra DynamicBackend:CheckClipboard(kind : B.Clipboard) : bool return false end
 terra DynamicBackend:ClearClipboard(kind : B.Clipboard) : F.Err return 0 end
 
-terra DynamicBackend:ProcessMessages(data : &opaque) : F.Err return 0 end
-terra DynamicBackend:SetCursor(data : &opaque, cursor : B.Cursor) : F.Err return 0 end
-terra DynamicBackend:RequestAnimationFrame(data : &opaque, delay : uint64) : F.Err return 0 end
-terra DynamicBackend:GetMonitorIndex(index : uint, out : &B.Display) : F.Err return 0 end
-terra DynamicBackend:GetMonitor(handle : uint64, out : &B.Display) : F.Err return 0 end
-terra DynamicBackend:SpawnWindow(element : &opaque, area : &F.Rect, caption : rawstring) : &opaque return nil end
-terra DynamicBackend:DespawnWindow(handle : &opaque) : F.Err return 0 end
+terra DynamicBackend:GetSyncObject() : &opaque return nil end
+terra DynamicBackend:ProcessMessages() : F.Err return 0 end
+terra DynamicBackend:SetCursor(window : &opaque, cursor : B.Cursor) : F.Err return 0 end
+terra DynamicBackend:RequestAnimationFrame(window : &opaque, delay : uint64) : F.Err return 0 end
+terra DynamicBackend:GetDisplayIndex(index : uint, out : &B.Display) : F.Err return 0 end
+terra DynamicBackend:GetDisplay(handle : uint64, out : &B.Display) : F.Err return 0 end
+terra DynamicBackend:GetDisplayWindow(window : &opaque, out : &B.Display) : F.Err return 0 end
+terra DynamicBackend:CreateWindow(data : &opaque, display : uint64, area : &F.Rect, caption : rawstring, flags : uint64) : &opaque return nil end
+terra DynamicBackend:SetWindow(window : &opaque, data : &opaque, display : uint64, area : &F.Rect, caption : rawstring, flags : uint64) : F.Err return 0 end
+terra DynamicBackend:DestroyWindow(window : &opaque) : F.Err return 0 end
 
 -- Generate both the function pointer field and redefine the function to call the generated function pointer
 do
