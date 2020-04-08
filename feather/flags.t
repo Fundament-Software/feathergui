@@ -31,9 +31,14 @@ local function Flags(lst)
       end
   end)
 
+  flagset.enum_values = {}
+
   for i, v in ipairs(lst) do
     flagset.methods[v] = constant(`[flagset]{[2^(i - 1)]})
+    flagset.enum_values[v] = 2^(i - 1)
   end
+
+  flagset.convertible = "enum"
 
   return flagset
 end

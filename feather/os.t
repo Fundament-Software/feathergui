@@ -55,7 +55,7 @@ else
   ]]
 
   terra S.LoadLibrary(path : rawstring) : &opaque
-    return C.dlopen(path, RTLD_NOW)
+    return C.dlopen(path, C.RTLD_NOW)
   end
 
   terra S.LoadFunction(ptr : &opaque, name : rawstring) : &opaque
