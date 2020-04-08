@@ -4,7 +4,7 @@ S.Err = int
 S.Delegate = &opaque -> {}
 S.Version = { 0, 1, 0 }
 
-local Color = require 'feather.Color'
+local Color = require 'feather.color'
 
 S.Color = Color(8,8,8,8)
 S.Color16 = Color(16,16,16,16)
@@ -18,7 +18,7 @@ struct S.URect {
   rel : S.Rect
 }
 
-local Vec = require 'feather.Vec'
+local Vec = require 'feather.vec'
 
 S.Vec = Vec(float, 2)
 S.Vec3D = Vec(float, 3)
