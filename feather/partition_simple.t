@@ -22,6 +22,8 @@ local struct SimplePartition {
   root : &Node
 }
 
+SimplePartition.Node = Node
+
 terra SimplePartition:create(parent : &Node, pos : &F.Vec3D, dim : &F.Vec3D, rot : &F.Vec3D, zindex : &F.Veci) : &Node
   var n : &Node = Alloc.alloc(Node, 1)
   n.prev = nil
@@ -46,7 +48,7 @@ terra SimplePartition:destroy(node : &Node) : {}
   Alloc.free(node)
 end
 
--- This is a very inaccurate "fixer" that just creates a maximal bounding box around the sphere equivilent for any rotational values.
+-- This is a very inaccurate "fixer" that just creates a maximal bounding box around the sphere equivalent for any rotational values.
 terra SimplePartition:fix(node : &Node) : {}
   var cur : &Node = node.child
   if cur ~= nil then
@@ -107,12 +109,46 @@ terra SimplePartition:_detach(node : &Node) : {}
   end
 end
 
-SimplePartition.methods.orthoquery = CT(function(t) return CT.MetaMethod(SimplePartition, {F.Vec, CT.Pointer(t), CT.Function({&opaque, CT.Pointer(t)})}, nil,
-function (self, p, data, fn)
+SimplePartition.methods.orthoquery = CT(function(t) return CT.TemplateMethod(SimplePartition, {F.Vec, CT.Value(t), CT.Function({&Node, CT.Value(t)}, bool)}, nil,
+function (S, P, D, FN)
+  local terra recurse(n : &Node, p : F.Vec, d : D, f : FN) : bool
+    var proj = n.pos.xy / n.pos.z
+    var pos = p - proj
+    if Math.abs(pos.x) > n.dim.x or Math.abs(pos.y) > n.dim.y then
+      return false
+    end
 
+    var cur = n.child
+    while cur ~= nil and cur.zindex.x >= 0 do -- x is the "topmost" zindex
+      if recurse(cur, p, d, f) then
+        return true
+      end
+    end
+
+    if f(n, d) then
+      return true
+    end
+
+    while cur ~= nil do
+      if recurse(cur, p, d, f) then
+        return true
+      end
+    end
+
+    return false
+  end
+
+  return terra(self : S, p : P, data : D, fn : FN) : {}
+    var cur = self.root
+    while cur ~= nil do
+      if recurse(cur, p, data, fn) then
+        break
+      end
+    end
+  end
 end) end, CT.TerraType)
 
-SimplePartition.methods.orthodraw = CT(function(t) return CT.MetaMethod(SimplePartition, {F.Rect, CT.Pointer(t), CT.Function({&opaque, CT.Pointer(t), &F.Rect})}, nil,
+SimplePartition.methods.orthodraw = CT(function(t) return CT.TemplateMethod(SimplePartition, {F.Rect, CT.Value(t), CT.Function({&Node, CT.Value(t), &F.Rect})}, nil,
 function (self, rect, data, fn)
 
 end) end, CT.TerraType)

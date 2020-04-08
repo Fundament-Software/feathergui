@@ -1,4 +1,5 @@
-local Vec = terralib.memoize(function(T, N)
+local Vec
+Vec = terralib.memoize(function(T, N)
   local struct s {
     v : T[N]
   }
@@ -39,14 +40,18 @@ local Vec = terralib.memoize(function(T, N)
 
   local lookups = {x = 0, y = 1, z = 2, w = 3 }
   s.metamethods.__entrymissing = macro(function(entryname, expr)
-    if lookups[entryname] then
-      if lookups[entryname] < N then
-        return `expr.v[ [ lookups[entryname] ] ]
-      else
-        error "Tried to look up letter that doesn't exist in an n-dimensional vector."
-      end
+    if #entryname > 1 then
+      return `[Vec(T, #entryname)]{arrayof([T], [terralib.newlist{entryname:byte(1, -1)}:map(string.char):map(function(x) return lookups[x] end)])}
     else
-      error (entryname.." is not a valid field.")
+      if lookups[entryname] then
+        if lookups[entryname] < N then
+          return `expr.v[ [ lookups[entryname] ] ]
+        else
+          error "Tried to look up letter that doesn't exist in an n-dimensional vector."
+        end
+      else
+        error (entryname.." is not a valid field.")
+      end
     end
   end)
    

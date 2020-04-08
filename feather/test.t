@@ -549,10 +549,12 @@ end
 
 P(SimplePartition)
 
+terra testquery(n : &SimplePartition.Node, i : int) : bool return true end
+
 terra TestHarness:partition()
   var simple : SimplePartition
   simple:init()
-  
+  simple:orthoquery(F.Vec{array(3.0f,4.0f)}, 3, testquery)
   simple:destruct()
 end
 
