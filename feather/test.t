@@ -156,19 +156,19 @@ local TestEnum = Enum{
 }
 
 terra TestHarness:enum()
-  self:Test(TestEnum.First.v, 0)
-  self:Test(TestEnum.second.v, 1)
-  self:Test(TestEnum.THIRD.v, 2)
+  self:Test(TestEnum.First.val, 0)
+  self:Test(TestEnum.second.val, 1)
+  self:Test(TestEnum.THIRD.val, 2)
 
   var e : TestEnum = TestEnum.First
-  self:Test(e.v, 0)
-  e.v = 0
+  self:Test(e.val, 0)
+  e.val = 0
   e = TestEnum.second
-  e.v = 1
-  self:Test(e.v, 1)
+  e.val = 1
+  self:Test(e.val, 1)
   e = TestEnum.THIRD
-  self:Test(e.v, 2)
-  e.v = 2
+  self:Test(e.val, 2)
+  e.val = 2
   self:Test(e, TestEnum.THIRD)
 end
 
@@ -211,10 +211,10 @@ terra TestHarness:rect()
   self:Test(a.top, 2)
   self:Test(a.right, 3)
   self:Test(a.bottom, 4)
-  self:Test(a.data[0], 1)
-  self:Test(a.data[1], 2)
-  self:Test(a.data[2], 3)
-  self:Test(a.data[3], 4)
+  self:Test(a.ltrb[0], 1)
+  self:Test(a.ltrb[1], 2)
+  self:Test(a.ltrb[2], 3)
+  self:Test(a.ltrb[3], 4)
 
   var b = F.Rect{array(5f,6f,7f,8f)}
   var c = a + b

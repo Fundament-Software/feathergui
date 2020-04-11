@@ -1,2 +1,6 @@
-/.vs/
+.vs/
 *.exe
+/bin-x64/
+/fgDirect2D/x64/
+/fgDirect2D/Win32/
+*.user

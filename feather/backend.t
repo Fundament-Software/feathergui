@@ -119,8 +119,8 @@ struct B.Display {
   primary : bool
 }
 
-struct DynamicBackend {
-  destroy : {&DynamicBackend} -> {}
+struct B.Backend {
+  destroy : {&B.Backend} -> {}
 
   features : B.Features
   formats : uint
@@ -130,50 +130,50 @@ struct DynamicBackend {
   tooltipdelay : uint64
 }
 
-terra DynamicBackend:DrawFont(data : &opaque, font : &B.Font, layout : &opaque, area : &F.Rect, color : F.Color, lineHeight : float, letterSpacing : float, blur : float, aa : B.AntiAliasing) : F.Err return 0 end
-terra DynamicBackend:DrawAsset(data : &opaque, asset : &B.Asset, area : &F.Rect, source : &F.Rect, color : F.Color, time : float) : F.Err return 0 end
-terra DynamicBackend:DrawRect(data : &opaque, area : &F.Rect, corners : &F.Rect, fillColor : F.Color, border : float, borderColor : F.Color, blur : float, asset : &B.Asset) : F.Err return 0 end
-terra DynamicBackend:DrawCircle(data : &opaque, area : &F.Rect, arcs : &F.Rect, fillColor : F.Color, border : float, borderColor : F.Color, blur : float, asset : &B.Asset) : F.Err return 0 end
-terra DynamicBackend:DrawTriangle(data : &opaque, area : &F.Rect, corners : &F.Rect, fillColor : F.Color, border : float, borderColor : F.Color, blur : float, asset : &B.Asset) : F.Err return 0 end
-terra DynamicBackend:DrawLines(data : &opaque, points : &F.Vec, count : uint, color : F.Color) : F.Err return 0 end
-terra DynamicBackend:DrawCurve(data : &opaque, anchors : &F.Vec, count : uint, fillColor : F.Color, stroke : float, strokeColor : F.Color) : F.Err return 0 end
-terra DynamicBackend:PushLayer(data : &opaque, area : F.Rect, transform : &float, opacity : float) : F.Err return 0 end
-terra DynamicBackend:PopLayer(data : &opaque) : F.Err return 0 end
-terra DynamicBackend:PushClip(data : &opaque, area : F.Rect) : F.Err return 0 end
-terra DynamicBackend:PopClip(data : &opaque) : F.Err return 0 end
-terra DynamicBackend:DirtyRect(data : &opaque, area : F.Rect) : F.Err return 0 end
+terra B.Backend:DrawFont(data : &opaque, font : &B.Font, layout : &opaque, area : &F.Rect, color : F.Color, lineHeight : float, letterSpacing : float, blur : float, aa : B.AntiAliasing) : F.Err return 0 end
+terra B.Backend:DrawAsset(data : &opaque, asset : &B.Asset, area : &F.Rect, source : &F.Rect, color : F.Color, time : float) : F.Err return 0 end
+terra B.Backend:DrawRect(data : &opaque, area : &F.Rect, corners : &F.Rect, fillColor : F.Color, border : float, borderColor : F.Color, blur : float, asset : &B.Asset) : F.Err return 0 end
+terra B.Backend:DrawCircle(data : &opaque, area : &F.Rect, arcs : &F.Rect, fillColor : F.Color, border : float, borderColor : F.Color, blur : float, asset : &B.Asset) : F.Err return 0 end
+terra B.Backend:DrawTriangle(data : &opaque, area : &F.Rect, corners : &F.Rect, fillColor : F.Color, border : float, borderColor : F.Color, blur : float, asset : &B.Asset) : F.Err return 0 end
+terra B.Backend:DrawLines(data : &opaque, points : &F.Vec, count : uint, color : F.Color) : F.Err return 0 end
+terra B.Backend:DrawCurve(data : &opaque, anchors : &F.Vec, count : uint, fillColor : F.Color, stroke : float, strokeColor : F.Color) : F.Err return 0 end
+terra B.Backend:PushLayer(data : &opaque, area : F.Rect, transform : &float, opacity : float) : F.Err return 0 end
+terra B.Backend:PopLayer(data : &opaque) : F.Err return 0 end
+terra B.Backend:PushClip(data : &opaque, area : F.Rect) : F.Err return 0 end
+terra B.Backend:PopClip(data : &opaque) : F.Err return 0 end
+terra B.Backend:DirtyRect(data : &opaque, area : F.Rect) : F.Err return 0 end
 
-terra DynamicBackend:CreateFont(family : rawstring, weight : uint16, italic : bool, pt : uint32, dpi : F.Vec) : &B.Font return nil end
-terra DynamicBackend:DestroyFont(font : &B.Font) : F.Err return 0 end
-terra DynamicBackend:FontLayout(font : &B.Font, text : rawstring, area : &F.Rect, lineHeight : float, letterSpacing : float, previous : &opaque, dpi : F.Vec) : &opaque return nil end
-terra DynamicBackend:FontIndex(font : &B.Font, layout : &opaque, area : &F.Rect, lineHeight : float, letterSpacing : float, pos : F.Vec, cursor : &F.Vec, dpi : F.Vec) : uint return 0 end
-terra DynamicBackend:FontPos(font : &B.Font, layout : &opaque, area :&F.Rect, lineHeight : float, letterSpacing : float, index : uint, dpi : F.Vec) : F.Vec return F.Vec{} end
+terra B.Backend:CreateFont(family : rawstring, weight : uint16, italic : bool, pt : uint32, dpi : F.Vec) : &B.Font return nil end
+terra B.Backend:DestroyFont(font : &B.Font) : F.Err return 0 end
+terra B.Backend:FontLayout(font : &B.Font, text : rawstring, area : &F.Rect, lineHeight : float, letterSpacing : float, previous : &opaque, dpi : F.Vec) : &opaque return nil end
+terra B.Backend:FontIndex(font : &B.Font, layout : &opaque, area : &F.Rect, lineHeight : float, letterSpacing : float, pos : F.Vec, cursor : &F.Vec, dpi : F.Vec) : uint return 0 end
+terra B.Backend:FontPos(font : &B.Font, layout : &opaque, area :&F.Rect, lineHeight : float, letterSpacing : float, index : uint, dpi : F.Vec) : F.Vec return F.Vec{} end
 
-terra DynamicBackend:CreateAsset(data : rawstring, count : uint, format : B.Formats) : &B.Asset return nil end
-terra DynamicBackend:DestroyAsset(asset : &B.Asset) : F.Err return 0 end
+terra B.Backend:CreateAsset(data : rawstring, count : uint, format : B.Formats) : &B.Asset return nil end
+terra B.Backend:DestroyAsset(asset : &B.Asset) : F.Err return 0 end
 
-terra DynamicBackend:PutClipboard(kind : B.Clipboard, data : rawstring, count : uint) : F.Err return 0 end
-terra DynamicBackend:GetClipboard(kind : B.Clipboard, target : &opaque, count : uint) : uint return 0 end
-terra DynamicBackend:CheckClipboard(kind : B.Clipboard) : bool return false end
-terra DynamicBackend:ClearClipboard(kind : B.Clipboard) : F.Err return 0 end
+terra B.Backend:PutClipboard(kind : B.Clipboard, data : rawstring, count : uint) : F.Err return 0 end
+terra B.Backend:GetClipboard(kind : B.Clipboard, target : &opaque, count : uint) : uint return 0 end
+terra B.Backend:CheckClipboard(kind : B.Clipboard) : bool return false end
+terra B.Backend:ClearClipboard(kind : B.Clipboard) : F.Err return 0 end
 
-terra DynamicBackend:GetSyncObject() : &opaque return nil end
-terra DynamicBackend:ProcessMessages() : F.Err return 0 end
-terra DynamicBackend:SetCursor(window : &opaque, cursor : B.Cursor) : F.Err return 0 end
-terra DynamicBackend:RequestAnimationFrame(window : &opaque, delay : uint64) : F.Err return 0 end
-terra DynamicBackend:GetDisplayIndex(index : uint, out : &B.Display) : F.Err return 0 end
-terra DynamicBackend:GetDisplay(handle : uint64, out : &B.Display) : F.Err return 0 end
-terra DynamicBackend:GetDisplayWindow(window : &opaque, out : &B.Display) : F.Err return 0 end
-terra DynamicBackend:CreateWindow(data : &opaque, display : uint64, area : &F.Rect, caption : rawstring, flags : uint64) : &opaque return nil end
-terra DynamicBackend:SetWindow(window : &opaque, data : &opaque, display : uint64, area : &F.Rect, caption : rawstring, flags : uint64) : F.Err return 0 end
-terra DynamicBackend:DestroyWindow(window : &opaque) : F.Err return 0 end
+terra B.Backend:GetSyncObject() : &opaque return nil end
+terra B.Backend:ProcessMessages() : F.Err return 0 end
+terra B.Backend:SetCursor(window : &opaque, cursor : B.Cursor) : F.Err return 0 end
+terra B.Backend:RequestAnimationFrame(window : &opaque, delay : uint64) : F.Err return 0 end
+terra B.Backend:GetDisplayIndex(index : uint, out : &B.Display) : F.Err return 0 end
+terra B.Backend:GetDisplay(handle : uint64, out : &B.Display) : F.Err return 0 end
+terra B.Backend:GetDisplayWindow(window : &opaque, out : &B.Display) : F.Err return 0 end
+terra B.Backend:CreateWindow(data : &opaque, display : uint64, area : &F.Rect, caption : rawstring, flags : uint64) : &opaque return nil end
+terra B.Backend:SetWindow(window : &opaque, data : &opaque, display : uint64, area : &F.Rect, caption : rawstring, flags : uint64) : F.Err return 0 end
+terra B.Backend:DestroyWindow(window : &opaque) : F.Err return 0 end
 
 -- Generate both the function pointer field and redefine the function to call the generated function pointer
 do
   local map = {}
-  for k, v in pairs(DynamicBackend.methods) do
+  for k, v in pairs(B.Backend.methods) do
     k = string.lower(k:sub(1,1)) .. k:sub(2, -1)
-    DynamicBackend.entries:insert({field = k, type = terralib.types.pointer(v:gettype())})
+    B.Backend.entries:insert({field = k, type = terralib.types.pointer(v:gettype())})
     map[k] = v -- TODO: alphabetically sort map before putting in entries, or use a C struct sorting method on the resulting struct
   end
 
@@ -183,16 +183,18 @@ do
   end
 end
 
-terra DynamicBackend:free(library : &opaque) : {}
+terra B.Backend:free(library : &opaque) : {}
   self.destroy(self)
   if library ~= nil then 
     OS.FreeLibrary(library)
   end
 end
 
-B.InitBackend = {&opaque} -> &DynamicBackend
+B.InitBackend = {&opaque} -> &B.Backend
+B.Log = terralib.types.funcpointer({&opaque, int, rawstring}, &B.Backend, true)
+B.Behavior = {&opaque, &opaque, &M.Msg} -> M.Result
 
-terra LoadDynamicBackend(ui : &opaque, path : rawstring, name : rawstring) : {&DynamicBackend, &opaque}
+terra LoadDynamicBackend(ui : &opaque, path : rawstring, name : rawstring) : {&B.Backend, &opaque}
   var l : &opaque = OS.LoadLibrary(path)
 
   if l == nil then
@@ -224,7 +226,7 @@ terra LoadDynamicBackend(ui : &opaque, path : rawstring, name : rawstring) : {&D
   end
 
   if f ~= nil then
-    var b : &DynamicBackend = f(ui)
+    var b : &B.Backend = f(ui)
     if b ~= nil then
       return b, l
     end
@@ -235,7 +237,7 @@ terra LoadDynamicBackend(ui : &opaque, path : rawstring, name : rawstring) : {&D
 end
 
 -- In cases where the backend is not known at compile time, we must load it via a shared library at runtime 
-function DynamicBackend:new(root, path, name)
+function B.Backend:new(root, path, name)
   return quote in LoadDynamicBackend(root, path, name) end
 end
 

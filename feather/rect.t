@@ -3,12 +3,12 @@ local Math = require 'std.math'
 
 local Rect = terralib.memoize(function(T)
   local struct s {
-    data : T[4]
+    ltrb : T[4]
   }
 
   s.metamethods.type, s.metamethods.N = T, 4
   s.metamethods.__typename = function(self) return ("Rect:%s"):format(tostring(self.metamethods.type)) end
-  s.metamethods.__apply = macro(function(self, index) return `self.data[index] end)
+  s.metamethods.__apply = macro(function(self, index) return `self.ltrb[index] end)
   s.methods.Zero = constant(`[s]{array([T](0),[T](0),[T](0),[T](0))})
 
   local ops = { "__sub","__add","__mul","__div" }
@@ -16,34 +16,34 @@ local Rect = terralib.memoize(function(T)
     local terra array_op(a : T[4], b : T[4])
       var c : s
       for i = 0,4 do
-        c.data[i] = operator(op, a[i], b[i])
+        c.ltrb[i] = operator(op, a[i], b[i])
       end
       return c
     end
     
-    local terra SS_op(a : s, b : s) return array_op(a.data, b.data) end
-    local terra ST_op(a : s, b : T) return array_op(a.data, array(b, b, b, b)) end
-    local terra TS_op(a : T, b : s) return array_op(array(a, a, a, a), b.data) end
+    local terra SS_op(a : s, b : s) return array_op(a.ltrb, b.ltrb) end
+    local terra ST_op(a : s, b : T) return array_op(a.ltrb, array(b, b, b, b)) end
+    local terra TS_op(a : T, b : s) return array_op(array(a, a, a, a), b.ltrb) end
     
     s.metamethods[op] = terralib.overloadedfunction("array_op", { SS_op, ST_op, TS_op })
   end
 
   terra s:Union(x : s) : s
     var b : s
-    b.data[0] = Math.min(self.data[0], x.data[0]);
-    b.data[1] = Math.min(self.data[1], x.data[1]);
-    b.data[2] = Math.max(self.data[2], x.data[2]);
-    b.data[3] = Math.max(self.data[3], x.data[3]);
+    b.ltrb[0] = Math.min(self.ltrb[0], x.ltrb[0]);
+    b.ltrb[1] = Math.min(self.ltrb[1], x.ltrb[1]);
+    b.ltrb[2] = Math.max(self.ltrb[2], x.ltrb[2]);
+    b.ltrb[3] = Math.max(self.ltrb[3], x.ltrb[3]);
     return b
   end
 
   terra s:Intersection(x : s) : s
     var b : s
-    b.data[0] = Math.max(self.data[0], x.data[0]);
-    b.data[1] = Math.max(self.data[1], x.data[1]);
-    b.data[2] = Math.min(self.data[2], x.data[2]);
-    b.data[3] = Math.min(self.data[3], x.data[3]);
-    if b.data[0] > b.data[2] or b.data[1] > b.data[3] then
+    b.ltrb[0] = Math.max(self.ltrb[0], x.ltrb[0]);
+    b.ltrb[1] = Math.max(self.ltrb[1], x.ltrb[1]);
+    b.ltrb[2] = Math.min(self.ltrb[2], x.ltrb[2]);
+    b.ltrb[3] = Math.min(self.ltrb[3], x.ltrb[3]);
+    if b.ltrb[0] > b.ltrb[2] or b.ltrb[1] > b.ltrb[3] then
       return s.Zero
     end
     return b
@@ -51,7 +51,7 @@ local Rect = terralib.memoize(function(T)
 
   terra s.metamethods.__eq(a : s, b : s)
     for i = 0,4 do
-      if a.data[i] ~= b.data[i] then return false end
+      if a.ltrb[i] ~= b.ltrb[i] then return false end
     end
     return true
   end
@@ -63,14 +63,14 @@ local Rect = terralib.memoize(function(T)
   local lookups = {left = 0, top = 1, right = 2, bottom = 3, l = 0, t = 1, r = 2, b = 3 }
   s.metamethods.__entrymissing = macro(function(entryname, expr)
     if entryname == "topleft" then 
-      return `[Vec(T, 2)]{array(expr.data[0], expr.data[1])}
+      return `[Vec(T, 2)]{array(expr.ltrb[0], expr.ltrb[1])}
     end
     if entryname == "bottomright" then 
-      return `[Vec(T, 2)]{array(expr.data[2], expr.data[3])}
+      return `[Vec(T, 2)]{array(expr.ltrb[2], expr.ltrb[3])}
     end
     if lookups[entryname] then
       if lookups[entryname] < 4 then
-        return `expr.data[ [ lookups[entryname] ] ]
+        return `expr.ltrb[ [ lookups[entryname] ] ]
       else
         error ("Index "..lookups[entryname].." doesn't exist in a rect.")
       end
@@ -85,7 +85,7 @@ local Rect = terralib.memoize(function(T)
     end
     if lookups[entryname] then
       if lookups[entryname] < 4 then
-        return quote expr.data[ [ lookups[entryname] ] ] = value end
+        return quote expr.ltrb[ [ lookups[entryname] ] ] = value end
       else
         error ("Index "..lookups[entryname].." doesn't exist in a rect.")
       end
