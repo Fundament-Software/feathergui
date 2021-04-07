@@ -1,16 +1,23 @@
-{ pkgs }:
+{
+  pkgs,
+  terrapkgs ? import (builtins.fetchTarball {
+    name = "nixos-unstable-old";
+    url = "https://github.com/NixOS/nixpkgs/archive/462c6fe4b11.tar.gz";
+    sha256 = "0a4bdaxjrds6kyw9s3r2vbc96f7glgy5n03jk4zr5z8h3j4v2s81";
+  }) {}
+}:
 
 with pkgs.lib;
 
 let
-  llvmPackages = pkgs.llvmPackages_9;
+  llvmPackages = terrapkgs.llvmPackages_9;
   luajitCommit = "9143e86498436892cb4316550be4d45b68a61224";
   luajitArchive = "LuaJIT-${luajitCommit}.tar.gz";
   luajitSrc = pkgs.fetchurl {
     url = "https://github.com/LuaJIT/LuaJIT/archive/${luajitCommit}.tar.gz";
     sha256 = "0kasmyk40ic4b9dwd4wixm0qk10l88ardrfimwmq36yc5dhnizmy";
   };
-  terra = pkgs.terra.overrideAttrs (old: {
+  terra = terrapkgs.terra.overrideAttrs (old: {
     src = pkgs.fetchFromGitHub {
       owner = "terralang";
       repo = "terra";
@@ -19,7 +26,7 @@ let
       # date = 2020-10-12T13:54:03-07:00;
     };
 
-    buildInputs = with llvmPackages; [ llvm clang-unwrapped pkgs.ncurses ];
+    buildInputs = with llvmPackages; [ llvm clang-unwrapped terrapkgs.ncurses ];
     meta = old.meta // { platforms = platforms.all; };
 
     preBuild = ''
