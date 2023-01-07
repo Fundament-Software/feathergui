@@ -1,21 +1,18 @@
+using import struct
 using import Array
-using import Map
-using import String
 using import enum
-using import spicetools
-using import itertools
+using import String
+using import Map
 
-let cjson =
-    include
-        """"
-            #include "cjson/cJSON.h"
+# TODO;
+# * On demand lexing.
+# * Standardize errors.
+# * Implement ATOF.
+# * Implement proper string parsing with solidus / reverse solidus.
+# * Potentially store boleans better in the tokens, the current method is ugly.
 
-load-library "libcjson.so"
-
-# for x in json.extern do
-    print x
 enum json
-let json-string = String
+let json-string = string
 let json-array = (GrowingArray json)
 let json-object = (Map Symbol json)
 enum json
@@ -48,242 +45,366 @@ enum json
             inline (value) (this-type.null)
         default ()
 
-sugar json-square-list (args...)
-    fn do-match (args...)
-        returning list
-        sugar-match args...
-        case (val ', rest...)
-            cons val (this-function rest...)
-        case (val)
-            cons val '()
-        default
-            error@ unknown-anchor "while expanding json square list" "json syntax is a comma separated list of values"
-    list
-        json.array
-        cons
-            json-array
-            do-match args...
+#
+# -- Lexer --
+#
 
-sugar json-curly-list (args...)
-    let obj = (Symbol "#json-object-symbol")
-    fn do-match (args...)
-        returning list
-        sugar-match args...
-        case ((name as string) ': val ', rest...)
-            cons
-                list ''set obj (list sugar-quote (Symbol name)) val
-                this-function rest...
-        case ((name as string) ': val)
-            list
-                list ''set obj (list sugar-quote (Symbol name)) val
-        default
-            error@ unknown-anchor "while expanding json curly list to object" "json object syntax is a comma separated list of key : value pairs"
-    list
-        json.object
-        ..
-            cons
-                do
-                list local obj '= (list json-object)
-                do-match args...
-            list obj
+fn do-error (msg cursor)
+    print cursor
+    error msg
 
-fn gen-json-matcher (failfunc expr scope params)
-    returning Value Scope
-    # report params
-    if (('typeof params) == Symbol)
-        if ('constant? params)
-            let id = (params as Symbol)
-            if ('variadic? id)
-                error "NYI: json variadic symbols matching"
-            else
-                _
-                    expr
-                    'bind scope id expr
+
+enum T : i32
+    T_NUMBER
+    T_STRING
+    
+    T_ARRAY_START
+    T_ARRAY_END
+    
+    T_OBJECT_START
+    T_OBJECT_END
+
+    T_BOOL
+    T_NULL
+
+    T_COMMA
+    T_COLON
+
+    T_NUMBER_START # utilized as a special production rule as the start of numbers are non-same
+    # see https://www.json.org/img/number.png
+    T_WHITESPACE # as above but with whitespace
+    # see https://www.json.org/img/whitespace.png
+
+    T_EOF
+
+
+struct Token
+    value : string
+    kind : T
+    position : i32
+
+fn lex (source) 
+    struct InputStream
+        source : string
+        cursor : (mutable@ i32)
+
+        fn peek (self)
+            return (self.source @ ((@ self.cursor) + 1))
+        
+        fn next (self)
+            (@ self.cursor) += 1
+            return (self.source @ (@ self.cursor))
+
+        fn end (self)
+            return (((@ self.cursor) + 1) >= ((countof self.source) - 1))
+
+        fn get-cursor (self)
+            return (@ self.cursor)
+    
+    fn create-token (value kind position)
+        return 
+            Token
+                value
+                kind
+                position
+    
+    fn match(character rule)
+        if (rule == T.T_NUMBER_START) 
+            return (
+            character == "0" or 
+            character == "1" or
+            character == "2" or
+            character == "3" or
+            character == "4" or
+            character == "5" or
+            character == "6" or
+            character == "7" or
+            character == "8" or
+            character == "9" or
+            character == "." or
+            character == "-"
+            )
+        
+        elseif (rule == T.T_NUMBER)
+            return (
+            character == "0" or 
+            character == "1" or
+            character == "2" or
+            character == "3" or
+            character == "4" or
+            character == "5" or
+            character == "6" or
+            character == "7" or
+            character == "8" or
+            character == "9" or
+            character == "." or
+            character == "-" or
+            character == "+" or 
+            character == "e" or
+            character == "E"
+            )
+
+        elseif (rule == T.T_STRING)
+            return (character == "\"")
+
+        elseif (rule == T.T_ARRAY_START)
+            return (character == "[")
+
+        elseif (rule == T.T_ARRAY_END)
+            return (character == "]")
+
+        elseif (rule == T.T_OBJECT_START)
+            return (character == "{")
+        
+        elseif (rule == T.T_OBJECT_END)
+            return (character == "}")
+
+        elseif (rule == T.T_COMMA)
+            return (character == ",")
+
+        elseif (rule == T.T_COLON)
+            return (character == ":")
+
+        elseif (rule == T.T_WHITESPACE)
+            return (
+            character == " "  or
+            character == "\n" or
+            character == "\r" or
+            character == "\t" 
+            )
+
+        false
+
+    local cursor = -1
+    local tokens = ((Array Token))
+    
+    let stream =
+        InputStream
+            source
+            &cursor
+
+    while (not ('end stream))
+        local c = (('next stream) as string)
+        local position = ('get-cursor stream)
+        local kind = T.T_NULL
+
+        if (match c T.T_NUMBER_START)
+            kind = T.T_NUMBER
+            local number = ("" as string)
+
+            while (match c T.T_NUMBER)
+                number ..= c
+
+                c = (('next stream) as string)
+
+            # back up 
+            (@ stream.cursor) -= 1
+            
+            c = number
+        
+        elseif (match c T.T_STRING)
+            kind = T.T_STRING
+
+            local str = ("" as string)
+
+            c = (('peek stream) as string)
+
+            while (c != ("\"" as string))
+                str ..= (('next stream) as string)
+                c = (('peek stream) as string)
+
+            ('next stream)
+
+            c = str
+
+        elseif (c == ("t" as string))
+            kind = T.T_BOOL
+            if ((('peek stream) as string) != ("r" as string))
+                error "unknown literal found in input stream"
+            ('next stream)
+
+            if ((('peek stream) as string) != ("u" as string))
+                error "unknown literal found in input stream"
+            ('next stream)
+
+            if ((('peek stream) as string) != ("e" as string))
+                error "unknown literal found in input stream"
+            ('next stream)
+
+            c = ("true" as string)
+
+        elseif (c == ("f" as string))
+            kind = T.T_BOOL
+            if ((('peek stream) as string) != ("a" as string))
+                error "unknown literal found in input stream"
+            ('next stream)
+
+            if ((('peek stream) as string) != ("l" as string))
+                error "unknown literal found in input stream"
+            ('next stream)
+
+            if ((('peek stream) as string) != ("s" as string))
+                error "unknown literal found in input stream"
+            ('next stream)
+
+            if ((('peek stream) as string) != ("e" as string))
+                error "unknown literal found in input stream"
+            ('next stream)
+
+            c = ("false" as string)
+
+        elseif (c == ("n" as string))
+            kind = T.T_NULL
+            if ((('peek stream) as string) != ("u" as string))
+                error "unknown literal found in input stream"
+            ('next stream)
+
+            if ((('peek stream) as string) != ("l" as string))
+                error "unknown literal found in input stream"
+            ('next stream)
+
+            if ((('peek stream) as string) != ("l" as string))
+                error "unknown literal found in input stream"
+            ('next stream)
+
+            c = ("null" as string)                      
+
+        elseif (match c T.T_OBJECT_START)
+            kind = T.T_OBJECT_START
+        elseif (match c T.T_OBJECT_END)
+            kind = T.T_OBJECT_END
+        elseif (match c T.T_ARRAY_START)
+            kind = T.T_ARRAY_START
+        elseif (match c T.T_ARRAY_END)
+            kind = T.T_ARRAY_END
+        elseif (match c T.T_COLON)
+            kind = T.T_COLON
+        elseif (match c T.T_COMMA)
+            kind = T.T_COMMA
+        elseif (match c T.T_WHITESPACE)
+            continue;
         else
-            error "nonconstant symbol in syntax?"
-    elseif (('kind params) == value-kind-const-string)
-        let lit = (params as string)
-        _
-            spice-quote
-                if (expr != lit)
-                    failfunc;
-            scope
-    elseif (('typeof params) == list)
-
-        params as:= list
-        let matcher-recurse = this-function
-        sugar-match params
-        case ('curly-list rest...)
-            fn object-pattern (failfunc expr scope fields unpackexprs)
-                returning Value Scope
-                sugar-match fields
-                case ((name as string) ': val ', rest...)
-                    let fieldexpr =
-                        spice-quote
-                            dispatch expr
-                            case object (obj)
-                                try
-                                    'get obj [(Symbol name)]
-                                else
-                                    failfunc;
-                            default
-                                failfunc;
-                    let subunpackexprs scope2 =
-                        matcher-recurse failfunc fieldexpr scope val
-                    sc_expression_append unpackexprs subunpackexprs
-                    let unpackexprs scope3 =
-                        this-function failfunc expr scope2 rest... unpackexprs
-                    _ unpackexprs scope3
-                case ((name as string) ': val)
-                    let fieldexpr =
-                        spice-quote
-                            dispatch expr
-                            case object (obj)
-                                try
-                                    'get obj [(Symbol name)]
-                                else
-                                    failfunc;
-                            default
-                                failfunc;
-                    let subunpackexprs scope2 =
-                        matcher-recurse failfunc fieldexpr scope val
-                    sc_expression_append unpackexprs subunpackexprs
-                    _ unpackexprs scope2
-                default
-                    error "json object syntax is a comma separated list of key : value pairs"
-            object-pattern failfunc expr scope rest... (sc_expression_new)
-        case ('square-list rest...)
-            error "NYI: json list matching"
-        case ((id as Symbol) 'as (kind as Symbol))
-            sugar-eval
-                let fields = '(array object string number boolean)
-                let matchers =
-                    # vvv report
-                    ..
-                        vvv list
-                        qq
-                            switch kind
-
-                        vvv 'reverse
-                        ->> (fields as Generator)
-                            map
-                                inline (name)
-                                    qq
-                                        case (sugar-quote [name])
-                                            let extractor =
-                                                spice-quote
-                                                    dispatch expr
-                                                    case [name] (arg)
-                                                        arg
-                                                    default
-                                                        failfunc;
-                                            _ extractor ('bind scope id extractor)
-                            'cons-sink '()
-                        vvv list
-                        qq
-                            default
-                                error [("unknown json field kind for match as; must be one of " .. (tostring fields))]
-
-                cons 'do matchers
+            do-error "non-valid token found in input stream" position
+        
+        'append tokens (create-token c kind position)
 
 
-        default
-            error "NYI: json matching for that pattern"
-    else
-        error "json match pattern element must be a symbol, a constant string, a json list pattern, or a json object pattern"
+    'append tokens (create-token "EOF" T.T_EOF ('get-cursor stream))
 
-run-stage;
-do
-    let json json-object json-array
+    return tokens
+#
+# -- Parser --
+#
 
-    fn parse(str)
-        let cj =
-            cjson.extern.cJSON_Parse str
-        defer cjson.extern.cJSON_Delete cj
-        fn convert(cj)
-            returning (uniqueof json -1)
-            raising Error
-            if (cj.type == 0)
-                error "invalid cjson value"
-            elseif (cj.type == 1)
-                json.boolean false
-            elseif (cj.type == 2)
-                json.boolean true
-            elseif (cj.type == 4)
-                json.null;
-            elseif (cj.type == 8)
-                json.number cj.valuedouble
-            elseif (cj.type == 16)
-                json.string (json-string cj.valuestring)
-            elseif (cj.type == 32)
-                json.array
-                    do
-                        local arr = (json-array)
-                        loop (elem = cj.child)
-                            if (elem == null)
-                                break arr
-                            else
-                                'append arr (this-function elem)
-                                repeat elem.next
-            elseif (cj.type == 64)
-                json.object
-                    do
-                        local obj = (json-object)
-                        loop (elem = cj.child)
-                            if (elem == null)
-                                break obj
-                            else
-                                'set obj (Symbol elem.string) (this-function elem)
-                                _ elem.next
-            elseif (cj.type == 128)
-                error "unable to convert cjson raw value"
+struct TokenStream
+    tokens : (Array Token)
+    cursor : (mutable@ i32)
+
+    fn next (self)
+        if (((@ self.cursor) + 1) >= (countof self.tokens))
+            error "found EOF while parsing"
+
+        ((@ self.cursor) += 1)
+        (self.tokens @ (@ self.cursor))
+
+    fn peek (self)
+        (self.tokens @ ((@ self.cursor) + 1))
+
+fn evaluate (stream)
+    returning (uniqueof json -1)
+
+    fn atof (number)
+        returning f64
+
+        local number = 0.0:f64
+
+    let token = ('next stream)
+
+    switch token.kind
+    case T.T_NUMBER
+        """"
+        json.number
+            atof token
+    case T.T_BOOL
+        json.boolean
+            print token.value
+            if (token.value == ("true" as string))
+                true
             else
-                error "unknown cjson value type"
-        convert cj
+                false
+    case T.T_STRING
+        # TODO; support solidus / reverse solidus
+        json.string (json-string token.value)
+    case T.T_NULL
+        json.null;
+    case T.T_ARRAY_START
+        """"
+            https://www.json.org/img/array.png
+            1. enter the main loop of 
+                i. append the parse result of the next token
+                ii. if there is a comma repeat
+                iii. if there is an array ] terminator token terminate
 
-    fn serialize(j)
-        fn convert(j)
-            viewing j
-            returning (mutable@ cjson.typedef.cJSON)
-            dispatch j
-            case array (arr)
-                let cj-arr = (cjson.extern.cJSON_CreateArray)
-                if (cj-arr == null)
-                    error "unable to allocate cjson object"
-                for item in arr
-                    let cj-item = (this-function item)
-                    # TODO: make a more efficient version of this
-                    cjson.extern.cJSON_AddItemToArray cj-arr cj-item
-                cj-arr
-            case object (obj)
-                let cj-obj = (cjson.extern.cJSON_CreateObject)
-                for name value in obj
-                    # TODO: make a more efficient version of this
-                    cjson.extern.cJSON_AddItemToObject cj-obj (name as string as rawstring) (this-function value)
-                cj-obj
-            case string (str)
-                cjson.extern.cJSON_CreateString str
-            case number (n)
-                cjson.extern.cJSON_CreateNumber n
-            case boolean (b)
-                cjson.extern.cJSON_CreateBool b
-            default
-                unreachable;
+        json.array
+            local arr = (json-array)
 
-        let cj = (convert j)
-        let str = (cjson.extern.cJSON_Print cj)
-        defer free str
-        String str
+            while true
+                'append arr (this-function stream)
+                
+                let final-token = ('next stream)
 
-    sugar literal (body...)
-        cons
-            do
-            list let 'square-list '= json-square-list
-            list let 'curly-list '= json-curly-list
-            body...
+                if (final-token.kind != T.T_COMMA and final-token.kind != T.T_ARRAY_END)
+                    print final-token.value
+                    error "expected comma seperator or end of array but found neither"
 
-    let json-match =
-        gen-match-block-parser gen-json-matcher
+                if (final-token.kind == T.T_ARRAY_END)
+                    break; 
 
+    case T.T_OBJECT_START
+        """"
+            https://www.json.org/img/object.png
+            1. enter the main loop of
+                i. assert we find a string token
+                ii. find a colon token
+                iii. set it's value to the return of a recursive call
+                iv. if we see a comma consume it and pass
+                v. if we find a object } terminator token terminate
 
-    locals;
+        json.object
+            local obj = (json-object)
+
+            while true
+                let key-string = ('next stream)
+
+                if (key-string.kind != T.T_STRING)
+                    error "expected string as object property but found something else"
+                
+                let seperator = ('next stream)
+
+                if (seperator.kind != T.T_COLON)
+                    error "expected object property seperator but found something else"
+
+                'set obj (Symbol key-string.value) (this-function stream)
+
+                let final-token = ('next stream)
+
+                if (final-token.kind != T.T_OBJECT_END and final-token.kind != T.T_COMMA)
+                    error "expected comma seperator or end of object but found neither"
+
+                if (final-token.kind == T.T_OBJECT_END)
+                    break;
+
+    default
+        print token.kind
+        print (tupleof "nonvalid token" "value" token.value)
+        do-error "non-valid token found in token stream" token.position
+
+fn parse (source)
+    local cursor = -1
+
+    let stream = 
+        TokenStream
+            (lex source)
+            &cursor
+
+    (evaluate stream)
