@@ -4,12 +4,12 @@ using import enum
 using import String
 using import Map
 
+using import .atof
+
 # TODO;
 # * On demand lexing.
 # * Standardize errors.
-# * Implement ATOF.
 # * Implement proper string parsing with solidus / reverse solidus.
-# * Potentially store boleans better in the tokens, the current method is ugly.
 
 enum json
 let json-string = string
@@ -96,7 +96,7 @@ fn lex (source)
             return (self.source @ (@ self.cursor))
 
         fn end (self)
-            return (((@ self.cursor) + 1) >= ((countof self.source) - 1))
+            return (((@ self.cursor) + 1) >= (countof self.source))
 
         fn get-cursor (self)
             return (@ self.cursor)
@@ -288,10 +288,10 @@ fn lex (source)
         
         'append tokens (create-token c kind position)
 
-
     'append tokens (create-token "EOF" T.T_EOF ('get-cursor stream))
 
-    return tokens
+    return &tokens
+
 #
 # -- Parser --
 #
@@ -313,21 +313,15 @@ struct TokenStream
 fn evaluate (stream)
     returning (uniqueof json -1)
 
-    fn atof (number)
-        returning f64
-
-        local number = 0.0:f64
-
     let token = ('next stream)
 
     switch token.kind
     case T.T_NUMBER
         """"
         json.number
-            atof token
+            atof token.value
     case T.T_BOOL
         json.boolean
-            print token.value
             if (token.value == ("true" as string))
                 true
             else
@@ -354,7 +348,6 @@ fn evaluate (stream)
                 let final-token = ('next stream)
 
                 if (final-token.kind != T.T_COMMA and final-token.kind != T.T_ARRAY_END)
-                    print final-token.value
                     error "expected comma seperator or end of array but found neither"
 
                 if (final-token.kind == T.T_ARRAY_END)
@@ -395,16 +388,16 @@ fn evaluate (stream)
                     break;
 
     default
-        print token.kind
-        print (tupleof "nonvalid token" "value" token.value)
-        do-error "non-valid token found in token stream" token.position
+        error "non-valid token found in token stream"
 
 fn parse (source)
     local cursor = -1
 
     let stream = 
         TokenStream
-            (lex source)
+            (@ (lex source))
             &cursor
 
     (evaluate stream)
+
+locals;
