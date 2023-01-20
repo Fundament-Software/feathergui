@@ -1,18 +1,23 @@
+# TODO;
+# * Look at using the Switcher in testing_switch.sc. Like a generator for compile time switch. 
+# * Ask Open / the Scopes Discord how to properly use the Match function, could clean up some messy things.
+
 using import struct
 using import Array
 using import enum
 using import String
 using import Map
+using import Rc
+
+using import format
+using import .time
 
 using import .atof
 
-# TODO;
-# * On demand lexing.
-# * Standardize errors.
-# * Implement proper string parsing with solidus / reverse solidus.
+global MAX_DEPTH = 100
 
 enum json
-let json-string = string
+let json-string = String
 let json-array = (GrowingArray json)
 let json-object = (Map Symbol json)
 enum json
@@ -45,359 +50,198 @@ enum json
             inline (value) (this-type.null)
         default ()
 
-#
-# -- Lexer --
-#
+# Scopes are namespaces that can get passed around. Namespaces are first class objects.
 
-fn do-error (msg cursor)
-    print cursor
-    error msg
-
-
-enum T : i32
-    T_NUMBER
-    T_STRING
-    
-    T_ARRAY_START
-    T_ARRAY_END
-    
-    T_OBJECT_START
-    T_OBJECT_END
-
-    T_BOOL
-    T_NULL
-
-    T_COMMA
-    T_COLON
-
-    T_NUMBER_START # utilized as a special production rule as the start of numbers are non-same
-    # see https://www.json.org/img/number.png
-    T_WHITESPACE # as above but with whitespace
-    # see https://www.json.org/img/whitespace.png
-
-    T_EOF
-
-
-struct Token
-    value : string
-    kind : T
-    position : i32
-
-fn lex (source) 
-    struct InputStream
-        source : string
-        cursor : (mutable@ i32)
-
-        fn peek (self)
-            return (self.source @ ((@ self.cursor) + 1))
-        
-        fn next (self)
-            (@ self.cursor) += 1
-            return (self.source @ (@ self.cursor))
-
-        fn end (self)
-            return (((@ self.cursor) + 1) >= (countof self.source))
-
-        fn get-cursor (self)
-            return (@ self.cursor)
-    
-    fn create-token (value kind position)
-        return 
-            Token
-                value
-                kind
-                position
-    
-    fn match(character rule)
-        if (rule == T.T_NUMBER_START) 
-            return (
-            character == "0" or 
-            character == "1" or
-            character == "2" or
-            character == "3" or
-            character == "4" or
-            character == "5" or
-            character == "6" or
-            character == "7" or
-            character == "8" or
-            character == "9" or
-            character == "." or
-            character == "-"
-            )
-        
-        elseif (rule == T.T_NUMBER)
-            return (
-            character == "0" or 
-            character == "1" or
-            character == "2" or
-            character == "3" or
-            character == "4" or
-            character == "5" or
-            character == "6" or
-            character == "7" or
-            character == "8" or
-            character == "9" or
-            character == "." or
-            character == "-" or
-            character == "+" or 
-            character == "e" or
-            character == "E"
-            )
-
-        elseif (rule == T.T_STRING)
-            return (character == "\"")
-
-        elseif (rule == T.T_ARRAY_START)
-            return (character == "[")
-
-        elseif (rule == T.T_ARRAY_END)
-            return (character == "]")
-
-        elseif (rule == T.T_OBJECT_START)
-            return (character == "{")
-        
-        elseif (rule == T.T_OBJECT_END)
-            return (character == "}")
-
-        elseif (rule == T.T_COMMA)
-            return (character == ",")
-
-        elseif (rule == T.T_COLON)
-            return (character == ":")
-
-        elseif (rule == T.T_WHITESPACE)
-            return (
-            character == " "  or
-            character == "\n" or
-            character == "\r" or
-            character == "\t" 
-            )
-
-        false
-
-    local cursor = -1
-    local tokens = ((Array Token))
-    
-    let stream =
-        InputStream
-            source
-            &cursor
-
-    while (not ('end stream))
-        local c = (('next stream) as string)
-        local position = ('get-cursor stream)
-        local kind = T.T_NULL
-
-        if (match c T.T_NUMBER_START)
-            kind = T.T_NUMBER
-            local number = ("" as string)
-
-            while (match c T.T_NUMBER)
-                number ..= c
-
-                c = (('next stream) as string)
-
-            # back up 
-            (@ stream.cursor) -= 1
+let ascii =
+    do
+        let
+            qmark = 34:i8 
             
-            c = number
-        
-        elseif (match c T.T_STRING)
-            kind = T.T_STRING
+            lparen = 40:i8
+            rparen = 41:i8
 
-            local str = ("" as string)
+            lbrace = 91:i8
+            rbrace = 93:i8
 
-            c = (('peek stream) as string)
+            lcbrace = 123:i8
+            rcbrace = 125:i8
 
-            while (c != ("\"" as string))
-                str ..= (('next stream) as string)
-                c = (('peek stream) as string)
+            zero = 48:i8
+            negative = 45:i8
+            null = 0:i8
 
-            ('next stream)
+            seperator = 58:i8
 
-            c = str
+            comma = 44:i8
 
-        elseif (c == ("t" as string))
-            kind = T.T_BOOL
-            if ((('peek stream) as string) != ("r" as string))
-                error "unknown literal found in input stream"
-            ('next stream)
+            space = 32:i8
+            tab = 9:i8
+            nl = 10:i8
+            cr = 13:i8
 
-            if ((('peek stream) as string) != ("u" as string))
-                error "unknown literal found in input stream"
-            ('next stream)
+            t = 116:i8
+            f = 102:i8
+            n = 110:i8
+        locals;
+let ws =
+    (tupleof ascii.space ascii.tab ascii.nl ascii.cr)
 
-            if ((('peek stream) as string) != ("e" as string))
-                error "unknown literal found in input stream"
-            ('next stream)
-
-            c = ("true" as string)
-
-        elseif (c == ("f" as string))
-            kind = T.T_BOOL
-            if ((('peek stream) as string) != ("a" as string))
-                error "unknown literal found in input stream"
-            ('next stream)
-
-            if ((('peek stream) as string) != ("l" as string))
-                error "unknown literal found in input stream"
-            ('next stream)
-
-            if ((('peek stream) as string) != ("s" as string))
-                error "unknown literal found in input stream"
-            ('next stream)
-
-            if ((('peek stream) as string) != ("e" as string))
-                error "unknown literal found in input stream"
-            ('next stream)
-
-            c = ("false" as string)
-
-        elseif (c == ("n" as string))
-            kind = T.T_NULL
-            if ((('peek stream) as string) != ("u" as string))
-                error "unknown literal found in input stream"
-            ('next stream)
-
-            if ((('peek stream) as string) != ("l" as string))
-                error "unknown literal found in input stream"
-            ('next stream)
-
-            if ((('peek stream) as string) != ("l" as string))
-                error "unknown literal found in input stream"
-            ('next stream)
-
-            c = ("null" as string)                      
-
-        elseif (match c T.T_OBJECT_START)
-            kind = T.T_OBJECT_START
-        elseif (match c T.T_OBJECT_END)
-            kind = T.T_OBJECT_END
-        elseif (match c T.T_ARRAY_START)
-            kind = T.T_ARRAY_START
-        elseif (match c T.T_ARRAY_END)
-            kind = T.T_ARRAY_END
-        elseif (match c T.T_COLON)
-            kind = T.T_COLON
-        elseif (match c T.T_COMMA)
-            kind = T.T_COMMA
-        elseif (match c T.T_WHITESPACE)
-            continue;
-        else
-            do-error "non-valid token found in input stream" position
-        
-        'append tokens (create-token c kind position)
-
-    'append tokens (create-token "EOF" T.T_EOF ('get-cursor stream))
-
-    return &tokens
-
-#
-# -- Parser --
-#
-
-struct TokenStream
-    tokens : (Array Token)
-    cursor : (mutable@ i32)
-
-    fn next (self)
-        if (((@ self.cursor) + 1) >= (countof self.tokens))
-            error "found EOF while parsing"
-
-        ((@ self.cursor) += 1)
-        (self.tokens @ (@ self.cursor))
+struct PeekableStream
+    source : (Rc String)
+    cursor : (Rc (mutable i32))
 
     fn peek (self)
-        (self.tokens @ ((@ self.cursor) + 1))
+        # consumes ws
+        (self.source @ (self.cursor + 1))
+        while ((self.source @ (self.cursor + 1)) in ws)
+            self.cursor += 1
+        (self.source @ (self.cursor + 1))
 
-fn evaluate (stream)
+    fn next (self)
+        ('peek self)
+        self.cursor += 1
+        (self.source @ self.cursor)
+
+fn eevaluate (stream depth)
     returning (uniqueof json -1)
 
-    let token = ('next stream)
+    let eevaluate = this-function
 
-    switch token.kind
-    case T.T_NUMBER
-        """"
-        json.number
-            atof token.value
-    case T.T_BOOL
-        json.boolean
-            if (token.value == ("true" as string))
-                true
-            else
-                false
-    case T.T_STRING
-        # TODO; support solidus / reverse solidus
-        json.string (json-string token.value)
-    case T.T_NULL
-        json.null;
-    case T.T_ARRAY_START
-        """"
-            https://www.json.org/img/array.png
-            1. enter the main loop of 
-                i. append the parse result of the next token
-                ii. if there is a comma repeat
-                iii. if there is an array ] terminator token terminate
+    if (depth == 0)
+        error "nesting depth exceeded unable to continue"
 
-        json.array
-            local arr = (json-array)
+    fn handle-number (stream)
+        stream.cursor -= 1
 
-            while true
-                'append arr (this-function stream)
-                
-                let final-token = ('next stream)
+        let valid-number = (tupleof S"0" S"1" S"2" S"3" S"4" S"5" S"6" S"7" S"8" S"9" S"e" S"E" S"-" S"+" S".")
+        local str = S""
 
-                if (final-token.kind != T.T_COMMA and final-token.kind != T.T_ARRAY_END)
-                    error "expected comma seperator or end of array but found neither"
+        while ((String (('peek stream) as string)) in valid-number)
+            str ..= (String (('next stream) as string))
+  
+        (json.number (atof (str as string)))
 
-                if (final-token.kind == T.T_ARRAY_END)
-                    break; 
-
-    case T.T_OBJECT_START
-        """"
-            https://www.json.org/img/object.png
-            1. enter the main loop of
-                i. assert we find a string token
-                ii. find a colon token
-                iii. set it's value to the return of a recursive call
-                iv. if we see a comma consume it and pass
-                v. if we find a object } terminator token terminate
-
+    fn handle-object (stream depth)
         json.object
             local obj = (json-object)
 
             while true
-                let key-string = ('next stream)
+                let key-scope = (eevaluate stream (depth - 1))
 
-                if (key-string.kind != T.T_STRING)
-                    error "expected string as object property but found something else"
-                
-                let seperator = ('next stream)
+                dispatch key-scope
+                case string (str)
+                    let seperator = ('next stream)
 
-                if (seperator.kind != T.T_COLON)
-                    error "expected object property seperator but found something else"
+                    if (seperator != ascii.seperator)
+                        error "expected object seperator : but found something else"
 
-                'set obj (Symbol key-string.value) (this-function stream)
+                    ('set obj (Symbol (str as string)) (eevaluate stream (depth - 1)))
 
-                let final-token = ('next stream)
+                    let branch-char = ('next stream)
 
-                if (final-token.kind != T.T_OBJECT_END and final-token.kind != T.T_COMMA)
-                    error "expected comma seperator or end of object but found neither"
+                    if (branch-char != ascii.comma and branch-char != ascii.rcbrace)
+                        error "expected comma seperator or end of object but found neither"
+                    if (branch-char == ascii.rcbrace)
+                        break;
 
-                if (final-token.kind == T.T_OBJECT_END)
+                default
+                    error "expected string propery in object but found something else"
+
+    fn handle-array (stream depth)
+        json.array
+            local arr = (json-array)
+
+            while true
+                'append arr (eevaluate stream (depth - 1))
+
+                let branch-char = ('next stream)
+
+                if (branch-char != ascii.comma and branch-char != ascii.rbrace)
+                    error "expected comma seperator or end of array but found neither"
+                if (branch-char == ascii.rbrace)
                     break;
+    fn handle-bool (stream text value)
+        stream.cursor -= 1 # backtrack to consume first character
+        let position = ((stream.cursor as usize) as i32)
+        local characters =  S""
 
+        for _ in (range (countof text)) 
+            characters ..= (('next stream) as string)
+
+        if (characters == text)
+            if (((text as string) == "true") or ((text as string) == "false"))
+                return (json.boolean value)
+            else
+                return (json.null)
+        else
+            error "invalid character found while attempting to parse literal"
+
+    local value = (json.null)
+
+    let c = ('next stream)
+
+    switch c
+    # rules for strings.
+    case ascii.qmark
+        local str = S""
+
+        while (('peek stream) != ascii.qmark)
+            str ..= (String (('next stream) as string))
+        ('next stream)
+
+        value = (json.string (json-string str))
+    case ascii.negative
+        value = (handle-number stream)
+    case ascii.zero
+        value = (handle-number stream)
+    case (ascii.zero + 1)
+        value = (handle-number stream)
+    case (ascii.zero + 2)
+        value = (handle-number stream)
+    case (ascii.zero + 3)
+        value = (handle-number stream)
+    case (ascii.zero + 4)
+        value = (handle-number stream)
+    case (ascii.zero + 5)
+        value = (handle-number stream)
+    case (ascii.zero + 6)
+        value = (handle-number stream)
+    case (ascii.zero + 7)
+        value = (handle-number stream)
+    case (ascii.zero + 8)
+        value = (handle-number stream)
+    case (ascii.zero + 9)
+        value = (handle-number stream)
+    case ascii.lbrace
+        value = 
+            (handle-array stream depth)
+    case ascii.lcbrace
+        value =
+            (handle-object stream depth)
+    case ascii.t
+        value =
+            (handle-bool stream "true" true)
+    case ascii.f
+        value = 
+            (handle-bool stream "false" false)
+    case ascii.n
+        value =
+            (handle-bool stream "null" true)
     default
-        error "non-valid token found in token stream"
+        error 
+            .. (format "{} <-- invalid character found in input stream" c)
 
-fn parse (source)
-    local cursor = -1
+    if (depth == MAX_DEPTH and (('peek stream) != ascii.null))
+        error "expected EOF but found more text"
 
-    let stream = 
-        TokenStream
-            (@ (lex source))
-            &cursor
+    value
 
-    (evaluate stream)
+fn pparse (source)
+    let stream =
+        PeekableStream
+            Rc.wrap (String source)
+            Rc.wrap -1
+    (eevaluate stream MAX_DEPTH)
 
 locals;
+

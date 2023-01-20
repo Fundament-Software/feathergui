@@ -1,4 +1,10 @@
 fn atof (str)
+    let stdlib =
+        (include "stdlib.h")
+
+    stdlib.extern.atof str
+
+fn satof (str)
     """"
         1. cut off the sign if there is one provided. not possible except by recursion.
             a. hold on to this value as a multiplicand in the end.
@@ -71,3 +77,4 @@ fn atof (str)
     return (number-sign * number-literal * exponent-literal)
 
 locals;
+
