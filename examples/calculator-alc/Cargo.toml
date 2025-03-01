@@ -31,7 +31,7 @@ uniffi = { version = "0.29.0", features = ["scaffolding-ffi-buffer-fns"] }
 uniffi-alicorn = { version = "0.1.2", features = [
   "scaffolding-ffi-buffer-fns",
 ] }
-thiserror = "1.0"
+thiserror = "2.0"
 
 [build-dependencies]
 # Add the "scaffolding-ffi-buffer-fns" feature to make sure things can build correctly
