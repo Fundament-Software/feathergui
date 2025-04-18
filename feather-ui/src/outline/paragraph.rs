@@ -56,7 +56,7 @@ impl base::Margin for MinimalFlexChild {
 }
 
 impl base::Limits for MinimalFlexChild {
-    fn limits(&self) -> &crate::URect {
+    fn limits(&self) -> &crate::ULimits {
         &crate::DEFAULT_LIMITS
     }
 }
@@ -105,6 +105,7 @@ impl<T: flex::Prop + 'static> Paragraph<T> {
                 color,
                 weight,
                 style,
+                wrap: glyphon::Wrap::None,
             };
             self.children.push_back(Some(Box::new(text)));
         }

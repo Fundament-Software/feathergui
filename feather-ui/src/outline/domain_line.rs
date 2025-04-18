@@ -131,6 +131,7 @@ impl Renderable for LinePipeline {
         _: crate::AbsRect,
         driver: &DriverState,
     ) -> im::Vector<crate::RenderInstruction> {
+        // TODO: This needs to be deferred until the end of the pipeline and then re-inserted back into place to remove dependency cycles
         let start = self.domain.get_area(&self.start).unwrap_or_default();
         let end = self.domain.get_area(&self.end).unwrap_or_default();
 

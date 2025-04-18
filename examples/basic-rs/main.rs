@@ -32,7 +32,7 @@ struct SimpleData {
     area: feather_ui::URect,
     margin: feather_ui::URect,
     anchor: feather_ui::UPoint,
-    limits: feather_ui::URect,
+    limits: feather_ui::ULimits,
     zindex: i32,
 }
 
@@ -82,7 +82,7 @@ impl FnPersist<CounterState, im::HashMap<Rc<SourceID>, Option<Window>>> for Basi
                     SimpleData {
                         area: feather_ui::URect {
                             topleft: feather_ui::UPoint {
-                                abs: ultraviolet::Vec2 { x: 0.0, y: 0.0 },
+                                abs: ultraviolet::Vec2 { x: 45.0, y: 45.0 },
                                 rel: feather_ui::RelPoint { x: 0.0, y: 0.0 },
                             },
                             bottomright: feather_ui::UPoint {

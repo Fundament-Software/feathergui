@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: 2025 Fundament Software SPC <https://fundament.software>
 
-use crate::{AbsRect, UPoint, URect};
+use crate::{AbsRect, ULimits, UPoint, URect};
 use std::rc::Rc;
 
 #[macro_export]
@@ -32,27 +32,24 @@ impl crate::layout::Desc for dyn Empty {
 
     fn stage<'a>(
         _: &Self::Props,
-        mut true_area: AbsRect,
-        parent_pos: ultraviolet::Vec2,
+        mut outer_area: AbsRect,
         _: &Self::Children,
         id: std::rc::Weak<crate::SourceID>,
         renderable: Option<Rc<dyn crate::outline::Renderable>>,
-        driver: &crate::DriverState,
+        _: &crate::DriverState,
     ) -> Box<dyn super::Staged + 'a> {
-        if true_area.bottomright.x.is_infinite() {
-            true_area.bottomright.x = true_area.topleft.x;
+        if outer_area.bottomright.x.is_infinite() {
+            outer_area.bottomright.x = outer_area.topleft.x;
         }
-        if true_area.bottomright.y.is_infinite() {
-            true_area.bottomright.y = true_area.topleft.y;
+        if outer_area.bottomright.y.is_infinite() {
+            outer_area.bottomright.y = outer_area.topleft.y;
         }
 
         Box::new(crate::layout::Concrete {
-            area: true_area - parent_pos,
-            render: renderable
-                .map(|x| x.render(true_area, driver))
-                .unwrap_or_default(),
+            area: outer_area,
+            render: renderable,
             rtree: Rc::new(crate::rtree::Node::new(
-                true_area - parent_pos,
+                outer_area,
                 None,
                 Default::default(),
                 id,
@@ -98,7 +95,7 @@ pub trait Anchor {
 }
 
 pub trait Limits {
-    fn limits(&self) -> &URect;
+    fn limits(&self) -> &ULimits;
 }
 
 pub trait Order {

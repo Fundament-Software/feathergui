@@ -12,7 +12,6 @@ use crate::rtree;
 use crate::AbsRect;
 use crate::SourceID;
 use crate::URect;
-use crate::Vec2;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
@@ -29,33 +28,25 @@ impl Desc for dyn Prop {
 
     fn stage<'a>(
         props: &Self::Props,
-        mut true_area: AbsRect,
-        parent_pos: Vec2,
+        mut outer_area: AbsRect,
         _: &Self::Children,
         id: std::rc::Weak<SourceID>,
         renderable: Option<Rc<dyn Renderable>>,
-        driver: &crate::DriverState,
+        _: &crate::DriverState,
     ) -> Box<dyn Staged + 'a> {
-        if true_area.bottomright.x.is_infinite() {
-            true_area.bottomright.x = true_area.topleft.x;
+        if outer_area.bottomright.x.is_infinite() {
+            outer_area.bottomright.x = outer_area.topleft.x;
         }
-        if true_area.bottomright.y.is_infinite() {
-            true_area.bottomright.y = true_area.topleft.y;
+        if outer_area.bottomright.y.is_infinite() {
+            outer_area.bottomright.y = outer_area.topleft.y;
         }
 
-        let area = *props.area() * true_area;
+        let myarea = *props.area() * outer_area;
 
         Box::new(Concrete {
-            area: area - parent_pos,
-            render: renderable
-                .map(|x| x.render(area, driver))
-                .unwrap_or_default(),
-            rtree: Rc::new(rtree::Node::new(
-                area - parent_pos,
-                None,
-                Default::default(),
-                id,
-            )),
+            area: myarea,
+            render: renderable,
+            rtree: Rc::new(rtree::Node::new(myarea, None, Default::default(), id)),
             children: Default::default(),
         })
     }

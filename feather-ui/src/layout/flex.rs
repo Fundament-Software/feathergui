@@ -251,8 +251,7 @@ impl Desc for dyn Prop {
 
     fn stage<'a>(
         props: &Self::Props,
-        true_area: AbsRect,
-        parent_pos: Vec2,
+        outer_area: AbsRect,
         children: &Self::Children,
         id: std::rc::Weak<crate::SourceID>,
         renderable: Option<Rc<dyn Renderable>>,
@@ -261,7 +260,7 @@ impl Desc for dyn Prop {
         let mut childareas: im::Vector<Option<BasisGrowShrinkAux>> = im::Vector::new();
 
         // If we are currently also being evaluated with infinite area, we have to set a few things to zero.
-        let dim = crate::AbsDim(zero_infinity(true_area.dim().into()));
+        let outer_dim = crate::AbsDim(zero_infinity(outer_area.dim().into()));
 
         let xaxis = match props.direction() {
             FlexDirection::LeftToRight | FlexDirection::RightToLeft => true,
@@ -272,24 +271,16 @@ impl Desc for dyn Prop {
         for child in children.iter() {
             let imposed = child.as_ref().unwrap().get_imposed();
 
-            let mut area = AbsRect {
-                topleft: true_area.topleft + (imposed.margin().topleft * dim),
-                bottomright: (true_area.bottomright - (imposed.margin().bottomright * dim)),
+            let area = AbsRect {
+                topleft: Vec2::zero(),
+                bottomright: if xaxis {
+                    Vec2::new(imposed.basis(), f32::INFINITY)
+                } else {
+                    Vec2::new(f32::INFINITY, imposed.basis())
+                },
             };
 
-            // If we don't have a basis, we need to set it to infinity
-            if xaxis {
-                area.bottomright.x = imposed.basis();
-                area.bottomright.y = f32::INFINITY;
-            } else {
-                area.bottomright.x = f32::INFINITY;
-                area.bottomright.y = imposed.basis();
-            }
-
-            let stage = child
-                .as_ref()
-                .unwrap()
-                .stage(area, true_area.topleft, driver);
+            let stage = child.as_ref().unwrap().stage(area, driver);
 
             let (main, aux) = swap_axis(xaxis, stage.get_area().dim().0);
 
@@ -316,21 +307,21 @@ impl Desc for dyn Prop {
 
         let (_, (used_main, used_aux)) = fold.call(fold.init(), &(0.0, 0.0), &childareas);
 
-        if (true_area.bottomright.x.is_infinite() && xaxis)
-            || (true_area.bottomright.y.is_infinite() && !xaxis)
+        if (outer_area.bottomright.x.is_infinite() && xaxis)
+            || (outer_area.bottomright.y.is_infinite() && !xaxis)
         {
-            let mut area = true_area;
+            let mut area = outer_area;
             if xaxis {
-                area.bottomright.x = used_main;
+                area.bottomright.x = outer_area.topleft.x + used_main;
             } else {
-                area.bottomright.y = used_main;
+                area.bottomright.y = outer_area.topleft.y + used_main;
             }
             // If we are evaluating our staged area along the main axis, no further calculations can be done
             return Box::new(Concrete {
-                area: area - parent_pos,
-                render: im::Vector::new(),
+                area: area - area.topleft,
+                render: None,
                 rtree: Rc::new(rtree::Node::new(
-                    area - parent_pos,
+                    area - area.topleft,
                     Some(props.zindex()),
                     nodes,
                     id,
@@ -339,7 +330,7 @@ impl Desc for dyn Prop {
             });
         }
 
-        let (total_main, total_aux) = swap_axis(xaxis, dim.0);
+        let (total_main, total_aux) = swap_axis(xaxis, outer_dim.0);
         // If we need to do wrapping, we do this first, before calculating anything else.
         let (breaks, linecount, used_aux) = if props.wrap() {
             // Anything other than `start` for main-axis justification causes problems if there are any obstacles we need to
@@ -482,11 +473,7 @@ impl Desc for dyn Prop {
                     std::mem::swap(&mut area.bottomright.x, &mut area.bottomright.y);
                 }
 
-                let stage = children[i].as_ref().unwrap().stage(
-                    area + true_area.topleft,
-                    true_area.topleft,
-                    driver,
-                );
+                let stage = children[i].as_ref().unwrap().stage(area, driver);
                 if let Some(node) = stage.get_rtree().upgrade() {
                     nodes.push_back(Some(node));
                 }
@@ -505,12 +492,10 @@ impl Desc for dyn Prop {
         }
 
         Box::new(Concrete {
-            area: true_area - parent_pos,
-            render: renderable
-                .map(|x| x.render(true_area, driver))
-                .unwrap_or_default(),
+            area: outer_area,
+            render: renderable,
             rtree: Rc::new(rtree::Node::new(
-                true_area - parent_pos,
+                outer_area,
                 Some(props.zindex()),
                 nodes,
                 id,
