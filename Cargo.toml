@@ -39,7 +39,7 @@ ultraviolet = "0.9"
 rand = { version = "0.8.5", features = ["std_rng"] }
 tracing-subscriber = { version = "0.3.18", features = ["time"] }
 tracing = "0.1.40"
-tokio = { version = "1.40", features = ["rt", "macros", "tracing", "signal"] }
+tokio = { version = "1.45", features = ["rt", "macros", "tracing", "signal"] }
 feather-ui = { path = "feather-ui" }
 alicorn = "0.1.2"
 mlua = { version = "0.10", features = ["luajit52", "vendored"] }
