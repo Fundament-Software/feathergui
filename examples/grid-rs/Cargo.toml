@@ -2,20 +2,20 @@
 # SPDX-FileCopyrightText: 2025 Fundament Software SPC <https://fundament.software>
 
 [package]
-name = "paragraph-rs"
+name = "grid-rs"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 authors = ["Erik McClure <erikm@fundament.software>"]
 description = """
-Basic paragraph example
+Testbed for grids
 """
 homepage.workspace = true
 readme.workspace = true
 license.workspace = true
 
 [[bin]]
-name = "paragraph-rs"
+name = "grid-rs"
 path = "main.rs"
 
 [dependencies]
