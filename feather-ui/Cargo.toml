@@ -58,7 +58,7 @@ windows-sys = { version = "0.59.0", features = [
 bytemuck = "1.23.0"
 cosmic-text.workspace = true
 guillotiere = "0.6.2"
-notify = "8.0.0"
+notify = "8.1.0"
 futures-lite = "2.6.0"
 num-traits = "0.2.19"
 swash = "0.2.5"
