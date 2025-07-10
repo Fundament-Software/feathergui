@@ -2,22 +2,22 @@
 # SPDX-FileCopyrightText: 2025 Fundament Software SPC <https://fundament.software>
 
 [package]
-name = "graph-rs"
+name = "basic-alc"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 authors = ["Erik McClure <erikm@fundament.software>"]
 description = """
-Simple graph editor
+Basic feather window using Alicorn
 """
 homepage.workspace = true
 readme.workspace = true
 license.workspace = true
 
 [[bin]]
-name = "graph-rs"
-path = "main.rs"
+name = "basic-alc"
+path = "basic.rs"
 
 [dependencies]
 feather-ui.workspace = true
-feather-macro.workspace = true
+alicorn.workspace = true
